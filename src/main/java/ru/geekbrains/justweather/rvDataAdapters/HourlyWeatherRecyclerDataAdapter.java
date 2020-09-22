@@ -1,4 +1,4 @@
-package ru.geekbrains.justweather;
+package ru.geekbrains.justweather.rvDataAdapters;
 
 import android.view.LayoutInflater;
 import android.view.View;
@@ -8,6 +8,7 @@ import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 import java.util.List;
+import ru.geekbrains.justweather.R;
 
 public class HourlyWeatherRecyclerDataAdapter extends RecyclerView.Adapter<HourlyWeatherRecyclerDataAdapter.ViewHolder> {
     private List<Integer> hourlyWeatherIcon ;

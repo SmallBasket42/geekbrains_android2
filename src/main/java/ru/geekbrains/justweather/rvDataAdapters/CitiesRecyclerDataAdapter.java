@@ -1,4 +1,4 @@
-package ru.geekbrains.justweather;
+package ru.geekbrains.justweather.rvDataAdapters;
 
 import android.util.Log;
 import android.view.LayoutInflater;
@@ -8,7 +8,7 @@ import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 import java.util.ArrayList;
-
+import ru.geekbrains.justweather.R;
 
 public class CitiesRecyclerDataAdapter extends RecyclerView.Adapter<CitiesRecyclerDataAdapter.ViewHolder> {
     private ArrayList<String> cities;

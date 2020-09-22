@@ -44,7 +44,7 @@ public class AboutFragment extends Fragment {
         sendMail.setOnClickListener(view1 -> {
             Intent emailIntent = new Intent(Intent.ACTION_SENDTO, Uri.fromParts(
                     "mailto","alexander.mukha23@gmail.com", null));
-            emailIntent.putExtra(Intent.EXTRA_SUBJECT, "WeatherApp");
+            emailIntent.putExtra(Intent.EXTRA_SUBJECT, "JustWeather");
             startActivity(Intent.createChooser(emailIntent, "Send email"));
         });
         super.onViewCreated(view, savedInstanceState);

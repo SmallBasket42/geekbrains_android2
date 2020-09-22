@@ -1,5 +1,5 @@
 
-package ru.geekbrains.justweather.model;
+package ru.geekbrains.justweather.model.weather;
 
 import com.google.gson.annotations.Expose;
 import com.google.gson.annotations.SerializedName;

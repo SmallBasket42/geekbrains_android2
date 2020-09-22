@@ -1,5 +1,5 @@
 
-package ru.geekbrains.justweather.model;
+package ru.geekbrains.justweather.model.weather;
 
 import com.google.gson.annotations.Expose;
 import com.google.gson.annotations.SerializedName;
@@ -14,7 +14,7 @@ public class City {
     private String name;
     @SerializedName("coord")
     @Expose
-    private Coord coord;
+    private ru.geekbrains.justweather.model.weather.Coord coord;
     @SerializedName("country")
     @Expose
     private String country;
@@ -47,11 +47,11 @@ public class City {
         this.name = name;
     }
 
-    public Coord getCoord() {
+    public ru.geekbrains.justweather.model.weather.Coord getCoord() {
         return coord;
     }
 
-    public void setCoord(Coord coord) {
+    public void setCoord(ru.geekbrains.justweather.model.weather.Coord coord) {
         this.coord = coord;
     }
 

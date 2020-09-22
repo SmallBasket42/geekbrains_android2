@@ -1,5 +1,5 @@
 
-package ru.geekbrains.justweather.model;
+package ru.geekbrains.justweather.model.weather;
 
 import com.google.gson.annotations.Expose;
 import com.google.gson.annotations.SerializedName;
@@ -11,16 +11,16 @@ public class List {
     private Integer dt;
     @SerializedName("main")
     @Expose
-    private Main main;
+    private ru.geekbrains.justweather.model.weather.Main main;
     @SerializedName("weather")
     @Expose
-    private java.util.List<Weather> weather = null;
+    private java.util.List<ru.geekbrains.justweather.model.weather.Weather> weather = null;
     @SerializedName("clouds")
     @Expose
     private Clouds clouds;
     @SerializedName("wind")
     @Expose
-    private Wind wind;
+    private ru.geekbrains.justweather.model.weather.Wind wind;
     @SerializedName("visibility")
     @Expose
     private Integer visibility;
@@ -29,13 +29,13 @@ public class List {
     private Double pop;
     @SerializedName("sys")
     @Expose
-    private Sys sys;
+    private ru.geekbrains.justweather.model.weather.Sys sys;
     @SerializedName("dt_txt")
     @Expose
     private String dtTxt;
     @SerializedName("rain")
     @Expose
-    private Rain rain;
+    private ru.geekbrains.justweather.model.weather.Rain rain;
 
     public Integer getDt() {
         return dt;
@@ -45,19 +45,19 @@ public class List {
         this.dt = dt;
     }
 
-    public Main getMain() {
+    public ru.geekbrains.justweather.model.weather.Main getMain() {
         return main;
     }
 
-    public void setMain(Main main) {
+    public void setMain(ru.geekbrains.justweather.model.weather.Main main) {
         this.main = main;
     }
 
-    public java.util.List<Weather> getWeather() {
+    public java.util.List<ru.geekbrains.justweather.model.weather.Weather> getWeather() {
         return weather;
     }
 
-    public void setWeather(java.util.List<Weather> weather) {
+    public void setWeather(java.util.List<ru.geekbrains.justweather.model.weather.Weather> weather) {
         this.weather = weather;
     }
 
@@ -69,11 +69,11 @@ public class List {
         this.clouds = clouds;
     }
 
-    public Wind getWind() {
+    public ru.geekbrains.justweather.model.weather.Wind getWind() {
         return wind;
     }
 
-    public void setWind(Wind wind) {
+    public void setWind(ru.geekbrains.justweather.model.weather.Wind wind) {
         this.wind = wind;
     }
 
@@ -93,11 +93,11 @@ public class List {
         this.pop = pop;
     }
 
-    public Sys getSys() {
+    public ru.geekbrains.justweather.model.weather.Sys getSys() {
         return sys;
     }
 
-    public void setSys(Sys sys) {
+    public void setSys(ru.geekbrains.justweather.model.weather.Sys sys) {
         this.sys = sys;
     }
 
@@ -109,11 +109,11 @@ public class List {
         this.dtTxt = dtTxt;
     }
 
-    public Rain getRain() {
+    public ru.geekbrains.justweather.model.weather.Rain getRain() {
         return rain;
     }
 
-    public void setRain(Rain rain) {
+    public void setRain(ru.geekbrains.justweather.model.weather.Rain rain) {
         this.rain = rain;
     }
 

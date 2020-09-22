@@ -19,7 +19,7 @@ public class SettingsFragment extends Fragment {
     private Switch pressureSwitch;
     @SuppressLint("UseSwitchCompatOrMaterialCode")
     private Switch feelsLikeSwitch;
-    SettingsActivityPresenter settingsActivityPresenter = SettingsActivityPresenter.getInstance();
+    SettingsPresenter settingsActivityPresenter = SettingsPresenter.getInstance();
 
     static SettingsFragment create(CurrentDataContainer container) {
         SettingsFragment fragment = new SettingsFragment();
@@ -87,11 +87,11 @@ public class SettingsFragment extends Fragment {
     }
 
     public void setCurrentSwitchState(){
-       boolean[] switchArr =  settingsActivityPresenter.getSettingsArray();
-       if(switchArr != null){
-           nightModeSwitch.setChecked(switchArr[0]);
-           feelsLikeSwitch.setChecked(switchArr[1]);
-           pressureSwitch.setChecked(switchArr[2]);
-       }
+        boolean[] switchArr =  settingsActivityPresenter.getSettingsArray();
+        if(switchArr != null){
+            nightModeSwitch.setChecked(switchArr[0]);
+            feelsLikeSwitch.setChecked(switchArr[1]);
+            pressureSwitch.setChecked(switchArr[2]);
+        }
     }
 }

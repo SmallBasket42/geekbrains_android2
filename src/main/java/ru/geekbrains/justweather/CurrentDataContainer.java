@@ -3,12 +3,15 @@ package ru.geekbrains.justweather;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Stack;
+import ru.geekbrains.justweather.model.weather.HourlyWeatherData;
+import ru.geekbrains.justweather.model.weather.WeatherData;
 
 public class CurrentDataContainer implements Serializable {
 
     private static CurrentDataContainer instance = null;
 
     private static final Object syncObj = new Object();
+
     private CurrentDataContainer(){}
 
     public static CurrentDataContainer getInstance(){
@@ -19,8 +22,7 @@ public class CurrentDataContainer implements Serializable {
             return instance;
         }
     }
-
-    String currCityName = "Saint Petersburg";
+    String currCityName = "Sochi";
     boolean[] switchSettingsArray;
     ArrayList<WeatherData> weekWeatherData = new ArrayList<>();
     ArrayList<HourlyWeatherData> hourlyWeatherList;

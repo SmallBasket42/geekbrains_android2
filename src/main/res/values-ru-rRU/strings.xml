@@ -23,7 +23,7 @@
     <string name="cityDeleted">Город удален</string>
     <string name="pleaseChooseCotyFirst">Пожалуйста, сначала выберите город</string>
     <string name="about">О приложении</string>
-    <string name="appName">Погода</string>
+    <string name="appName">Just Weather</string>
     <string name="version">"Версия 1.0 "</string>
     <string name="delete_city">Удалить город?</string>
     <string name="delete">Удалить</string>
@@ -94,11 +94,13 @@
     <string name="nav_header_subtitle">android.studio@android.com</string>
     <string name="nav_header_desc">Navigation header</string>
     <string name="action_settings">Settings</string>
-
+    <string name="city_not_found">Город не найден, попробуйте еще раз.</string>
     <string name="menu_home">Домой</string>
     <string name="menu_choose_city">Выберите город</string>
     <string name="menu_about">О приложении</string>
     <string name="read_wiki">Википедия</string>
     <string name="alex_mukha_2020">© Александр Муха, 2020</string>
     <string name="pleaseChooseCityFirst">Пожалуйста, с начала выберите город</string>
+    <string name="connection_failed">Ошибка интернет соединения.</string>
+    <string name="sorry_alert_dialog">Извините, я не могу найти прогноз.</string>
 </resources>

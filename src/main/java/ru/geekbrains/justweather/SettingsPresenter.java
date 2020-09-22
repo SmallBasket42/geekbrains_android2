@@ -1,19 +1,21 @@
 package ru.geekbrains.justweather;
 
-public class SettingsActivityPresenter {
-    private static SettingsActivityPresenter instance = null;
+public class SettingsPresenter {
+
+    private static SettingsPresenter instance = null;
+
     private static final Object syncObj = new Object();
     private boolean isNightModeSwitchOn;
     private boolean isPressureSwitchOn;
     private boolean isFeelsLikeSwitchOn;
     private boolean[] settingsArray;
 
-    private SettingsActivityPresenter(){}
+    private SettingsPresenter(){}
 
     public boolean[] getSettingsArray(){return settingsArray;}
 
     public void changeFeelsLikeSwitchStatus(){
-       isFeelsLikeSwitchOn = !isFeelsLikeSwitchOn;
+        isFeelsLikeSwitchOn = !isFeelsLikeSwitchOn;
     }
 
     public boolean getIsNightModeSwitchOn(){return isNightModeSwitchOn;}
@@ -31,10 +33,10 @@ public class SettingsActivityPresenter {
         return  settingsArray;
     }
 
-    public static SettingsActivityPresenter getInstance(){
+    public static SettingsPresenter getInstance(){
         synchronized (syncObj) {
             if (instance == null) {
-                instance = new SettingsActivityPresenter();
+                instance = new SettingsPresenter();
             }
             return instance;
         }
