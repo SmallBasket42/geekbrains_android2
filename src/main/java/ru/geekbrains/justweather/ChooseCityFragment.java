@@ -19,10 +19,13 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 import com.google.android.material.snackbar.Snackbar;
 import com.google.android.material.textfield.TextInputEditText;
+import java.net.MalformedURLException;
 import java.util.ArrayList;
 import java.util.Objects;
 import java.util.regex.Pattern;
 import ru.geekbrains.justweather.events.OpenWeatherMainFragmentEvent;
+import ru.geekbrains.justweather.forecastRequest.ForecastRequest;
+import ru.geekbrains.justweather.forecastRequest.OpenWeatherMap;
 import ru.geekbrains.justweather.model.weather.HourlyWeatherData;
 import ru.geekbrains.justweather.model.weather.WeatherData;
 import ru.geekbrains.justweather.rvDataAdapters.CitiesRecyclerDataAdapter;
@@ -38,23 +41,24 @@ public class ChooseCityFragment extends Fragment implements RVOnItemClick {
     private ArrayList<WeatherData> weekWeatherData = new ArrayList<>();
     private ArrayList<HourlyWeatherData> hourlyWeatherList = new ArrayList<>();
     final String myLog = "myLog";
-    ChooseCityPresenter chooseCityPresenter = ChooseCityPresenter.getInstance();
+    OpenWeatherMap openWeatherMap = OpenWeatherMap.getInstance();
     private boolean isErrorShown;
     Pattern checkEnterCity = Pattern.compile("^[а-яА-ЯЁa-zA-Z]+(?:[\\s-][а-яА-ЯЁa-zA-Z]+)*$");
 
     static ChooseCityFragment create(CurrentDataContainer container) {
-        ChooseCityFragment fragment = new ChooseCityFragment();
+        ChooseCityFragment fragment = new ChooseCityFragment();    // создание
         Bundle args = new Bundle();
         args.putSerializable("currCity", container);
         fragment.setArguments(args);
         return fragment;
     }
+
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
-//        Log.d("Theme", "onCreate - fragment WeatherMainFragment");
         Log.d("myLog", "onCreate - fragment SettingsFragment");
         super.onCreate(savedInstanceState);
     }
+
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
@@ -92,28 +96,30 @@ public class ChooseCityFragment extends Fragment implements RVOnItemClick {
                     if (!Objects.requireNonNull(enterCity.getText()).toString().equals("")) {
                         String previousCity = CurrentDataContainer.getInstance().currCityName;
                         currentCity = enterCity.getText().toString();
-                        //Создаем прогноз погоды на неделю для нового выбранного города:
                         takeWeatherInfoForFiveDays();
-                        if (ChooseCityPresenter.responseCode == 404) {
-                            Log.d(myLog, "RESPONSE COD = " + ChooseCityPresenter.responseCode + " CURR CITY = " + currentCity);
+                        if (ForecastRequest.responseCode == 404) {
+                            Log.d(myLog, "RESPONSE COD = " + ForecastRequest.responseCode + " CURR CITY = " + currentCity);
                             showAlertDialog(R.string.city_not_found);
                             currentCity = previousCity;
                         }
-                        if (ChooseCityPresenter.responseCode == 200) {
+                        if (ForecastRequest.responseCode == 200) {
                             CurrentDataContainer.getInstance().currCityName = currentCity;
-                            Log.d(myLog, "RESPONSE COD = " + ChooseCityPresenter.responseCode + " CURR CITY = " + currentCity);
-                            weekWeatherData = chooseCityPresenter.getWeekWeatherData();
-                            hourlyWeatherList = chooseCityPresenter.getHourlyWeatherData();
-                            CurrentDataContainer.getInstance().weekWeatherData = weekWeatherData;
-                            CurrentDataContainer.getInstance().hourlyWeatherList = hourlyWeatherList;
-                            //Добавляем новый город в RV
-                            adapter.addNewCity(currentCity);
-                            Toast.makeText(requireActivity(), currentCity, Toast.LENGTH_SHORT).show();
-                            updateWeatherData();
-                            enterCity.setText("");
+                            Log.d(myLog, "RESPONSE COD = " + ForecastRequest.responseCode + " CURR CITY = " + currentCity);
+                            new Thread(() -> {
+                                weekWeatherData = openWeatherMap.getWeekWeatherData(getResources());
+                                hourlyWeatherList = openWeatherMap.getHourlyWeatherData();
+                                requireActivity().runOnUiThread(() -> {
+                                    CurrentDataContainer.getInstance().weekWeatherData = weekWeatherData;
+                                    CurrentDataContainer.getInstance().hourlyWeatherList = hourlyWeatherList;
+                                    adapter.addNewCity(currentCity);
+                                    Toast.makeText(requireActivity(), currentCity, Toast.LENGTH_SHORT).show();
+                                    updateWeatherData();
+                                    enterCity.setText("");
+                                });
+                            }).start();
                         }
-                        if (ChooseCityPresenter.responseCode != 200 && ChooseCityPresenter.responseCode != 404) {
-                            Log.d(myLog, "RESPONSE COD = " + ChooseCityPresenter.responseCode + " CURR CITY = " + currentCity);
+                        if (ForecastRequest.responseCode != 200 && ForecastRequest.responseCode != 404) {
+                            Log.d(myLog, "RESPONSE COD = " + ForecastRequest.responseCode + " CURR CITY = " + currentCity);
                             showAlertDialog(R.string.connection_failed);
                             currentCity = previousCity;
                         }
@@ -144,25 +150,30 @@ public class ChooseCityFragment extends Fragment implements RVOnItemClick {
     private void takeCitiesList(){
         if(CurrentDataContainer.getInstance().citiesList != null) this.citiesList = CurrentDataContainer.getInstance().citiesList;
     }
+
     @Override
     public void onItemClicked(View view, String itemText) {
         currentCity = itemText;
         CurrentDataContainer.getInstance().currCityName = currentCity;
         adapter.putChosenCityToTopInCitiesList(currentCity);
         takeWeatherInfoForFiveDays();
-        if(ChooseCityPresenter.responseCode == 200) {
-            Log.d(myLog, "RESPONSE COD = " + ChooseCityPresenter.responseCode + " CURR CITY = " + currentCity);
-            this.weekWeatherData = chooseCityPresenter.getWeekWeatherData();
-            this.hourlyWeatherList = chooseCityPresenter.getHourlyWeatherData();
-            CurrentDataContainer.getInstance().weekWeatherData = this.weekWeatherData;
-            CurrentDataContainer.getInstance().hourlyWeatherList = this.hourlyWeatherList;
+        if(ForecastRequest.responseCode == 200) {
+            Log.d(myLog, "RESPONSE COD = " + ForecastRequest.responseCode + " CURR CITY = " + currentCity);
+            new Thread(() -> {
+                weekWeatherData = openWeatherMap.getWeekWeatherData(getResources());
+                hourlyWeatherList = openWeatherMap.getHourlyWeatherData();
+                requireActivity().runOnUiThread(() -> {
+                    CurrentDataContainer.getInstance().weekWeatherData = weekWeatherData;
+                    CurrentDataContainer.getInstance().hourlyWeatherList = hourlyWeatherList;
+                    updateWeatherData();
+                });
+            }).start();
         } else {
-            Log.d(myLog, "RESPONSE COD = " + ChooseCityPresenter.responseCode + " CURR CITY = " + currentCity);
+            Log.d(myLog, "RESPONSE COD = " + ForecastRequest.responseCode + " CURR CITY = " + currentCity);
             showAlertDialog(R.string.connection_failed);
             return;
         }
         Log.d(myLog, "ChooseCityFragment - setOnBtnOkEnterCityClickListener -> BEFORE flag");
-        updateWeatherData();
     }
 
     @Override
@@ -181,8 +192,13 @@ public class ChooseCityFragment extends Fragment implements RVOnItemClick {
     }
 
     private void takeWeatherInfoForFiveDays(){
-        chooseCityPresenter.getFiveDaysWeatherFromServer(currentCity, getResources());
-        if(ChooseCityPresenter.responseCode == 200) CurrentDataContainer.isFirstEnter = false;
+        try {
+            ForecastRequest.getForecastFromServer(currentCity, openWeatherMap.getWeatherUrl(currentCity));
+        } catch (MalformedURLException e) {
+            Log.e(myLog, "Fail URI", e);
+            e.printStackTrace();
+        }
+        if(ForecastRequest.responseCode == 200) CurrentDataContainer.isFirstEnter = false;
     }
 
     private void setupRecyclerView() {
@@ -218,9 +234,11 @@ public class ChooseCityFragment extends Fragment implements RVOnItemClick {
             isErrorShown = true;
         }
     }
+
     private void showError(TextView view, String message) {
         view.setError(message);
     }
+
     private void hideError(TextView view) {
         view.setError(null);
     }

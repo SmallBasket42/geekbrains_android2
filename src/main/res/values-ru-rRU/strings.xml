@@ -103,4 +103,5 @@
     <string name="pleaseChooseCityFirst">Пожалуйста, с начала выберите город</string>
     <string name="connection_failed">Ошибка интернет соединения.</string>
     <string name="sorry_alert_dialog">Извините, я не могу найти прогноз.</string>
+    <string name="update">обновлено: %1$s</string>
 </resources>

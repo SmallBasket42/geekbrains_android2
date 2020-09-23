@@ -18,6 +18,7 @@ import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.DividerItemDecoration;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
+import java.net.MalformedURLException;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -27,6 +28,9 @@ import java.util.Date;
 import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
+import ru.geekbrains.justweather.customViews.ThermometerView;
+import ru.geekbrains.justweather.forecastRequest.ForecastRequest;
+import ru.geekbrains.justweather.forecastRequest.OpenWeatherMap;
 import ru.geekbrains.justweather.model.weather.HourlyWeatherData;
 import ru.geekbrains.justweather.model.weather.WeatherData;
 import ru.geekbrains.justweather.rvDataAdapters.HourlyWeatherRecyclerDataAdapter;
@@ -37,7 +41,7 @@ public class WeatherMainFragment extends Fragment implements RVOnItemClick {
     public static String currentCity = "";
     private TextView cityTextView;
     private TextView degrees;
-    private TextView feelsLikeTextView, pressureInfoTextView;
+    private TextView feelsLikeTextView, pressureInfoTextView, updateTimeTextView;
     final String myLog = "myLog";
     private RecyclerView weatherRecyclerView;
     private RecyclerView hourlyRecyclerView;
@@ -57,7 +61,6 @@ public class WeatherMainFragment extends Fragment implements RVOnItemClick {
     private ArrayList<String> citiesList;
     private ArrayList<WeatherData> weekWeatherData;
     private ArrayList<HourlyWeatherData> hourlyWeatherData;
-
 
     static WeatherMainFragment create(CurrentDataContainer container) {
         WeatherMainFragment fragment = new WeatherMainFragment();
@@ -111,15 +114,23 @@ public class WeatherMainFragment extends Fragment implements RVOnItemClick {
     private void takeWeatherInfoForFirstEnter(){
         if(CurrentDataContainer.isFirstEnter){
             Log.d(myLog, "*FIRST ENTER*");
-            ChooseCityPresenter chooseCityPresenter = ChooseCityPresenter.getInstance();
-            chooseCityPresenter.getFiveDaysWeatherFromServer(currentCity, getResources());
-            this.weekWeatherData = chooseCityPresenter.getWeekWeatherData();
-            this.hourlyWeatherData = chooseCityPresenter.getHourlyWeatherData();
-            updateWeatherInfo(getResources());
-            if(ChooseCityPresenter.responseCode != 200) showAlertDialog();
-            Log.d(myLog, "takeWeatherInfoForFirstEnter - after updateWeatherInfo;  CITIES LIST = "+ citiesList.toString());
-            setupRecyclerView();
-            setupHourlyWeatherRecyclerView();
+            OpenWeatherMap openWeatherMap = OpenWeatherMap.getInstance();
+            try {
+                ForecastRequest.getForecastFromServer(currentCity, openWeatherMap.getWeatherUrl(currentCity));
+            } catch (MalformedURLException e) {
+                e.printStackTrace();
+            }
+            new Thread(() -> {
+                weekWeatherData = openWeatherMap.getWeekWeatherData(getResources());
+                hourlyWeatherData = openWeatherMap.getHourlyWeatherData();
+                requireActivity().runOnUiThread(() -> {
+                    updateWeatherInfo(getResources());
+                    if(ForecastRequest.responseCode != 200) showAlertDialog();
+                    Log.d(myLog, "takeWeatherInfoForFirstEnter - after updateWeatherInfo;  CITIES LIST = "+ citiesList.toString());
+                    setupRecyclerView();
+                    setupHourlyWeatherRecyclerView();
+                });
+            }).start();
         } else {
             Log.d(myLog, "*NOT FIRST ENTER*");
         }
@@ -140,7 +151,6 @@ public class WeatherMainFragment extends Fragment implements RVOnItemClick {
     }
 
     private void initViews(View view) {
-
         cityTextView = view.findViewById(R.id.city);
         degrees = view.findViewById(R.id.degrees);
         feelsLikeTextView = view.findViewById(R.id.feelsLikeTextView);
@@ -150,6 +160,7 @@ public class WeatherMainFragment extends Fragment implements RVOnItemClick {
         windInfoTextView = view.findViewById(R.id.windSpeed);
         currTime = view.findViewById(R.id.currTime);
         weatherStatusTextView = view.findViewById(R.id.cloudyInfoTextView);
+        updateTimeTextView = view.findViewById(R.id.update_time);
     }
 
     private void setOnCityTextViewClickListener(){
@@ -176,18 +187,19 @@ public class WeatherMainFragment extends Fragment implements RVOnItemClick {
         this.citiesList = citiesListFromRes;
         if(CurrentDataContainer.isFirstEnter) {
             CurrentDataContainer.getInstance().citiesList = citiesListFromRes;
-            if(ChooseCityPresenter.responseCode != 200) {
+            if(ForecastRequest.responseCode != 200) {
                 Log.d(myLog, "updateWeatherInfo from resources");
-
                 degrees.setText("+0°");
-
                 String windInfoFromRes = resources.getString(R.string.windInfo);
                 windInfoTextView.setText(String.format(windInfoFromRes, "0"));
-
                 Date currentDate = new Date();
-                DateFormat timeFormat = new SimpleDateFormat("E, HH:mm", Locale.getDefault());
-                String timeText = timeFormat.format(currentDate);
-                currTime.setText(timeText);
+                DateFormat dateFormat = new SimpleDateFormat("E, dd mmm", Locale.getDefault());
+                String dateText = dateFormat.format(currentDate);
+                currTime.setText(dateText);
+                DateFormat updateTimeFormat = new SimpleDateFormat("HH:mm", Locale.getDefault());
+                String timeText = updateTimeFormat.format(currentDate);
+                String upateTimeFromRes = resources.getString(R.string.update);
+                updateTimeTextView.setText(String.format(upateTimeFromRes, timeText));
                 Log.d(myLog, "WEatherMainFragment - updateWeatherInfo - FIRSTENTER; responseCode != 200; CITIES LIST = " + citiesList.toString());
             } else {
                 settingsSwitchArray = CurrentDataContainer.getInstance().switchSettingsArray;
@@ -202,7 +214,6 @@ public class WeatherMainFragment extends Fragment implements RVOnItemClick {
             weekWeatherData = CurrentDataContainer.getInstance().weekWeatherData;
             hourlyWeatherData = CurrentDataContainer.getInstance().hourlyWeatherList;
             citiesList = CurrentDataContainer.getInstance().citiesList;
-
             isSettingsSwitchArrayTransferred(settingsSwitchArray);
             setNewWeatherData(weekWeatherData, hourlyWeatherData);
         }
@@ -230,21 +241,22 @@ public class WeatherMainFragment extends Fragment implements RVOnItemClick {
             degrees.setText(wd.getDegrees());
             ThermometerView.level = findDegreesLevel(wd.getIntDegrees());
             windInfoTextView.setText(wd.getWindInfo());
-
             Date currentDate = new Date();
-            DateFormat timeFormat = new SimpleDateFormat("E, HH:mm", Locale.getDefault());
-            String timeText = timeFormat.format(currentDate);
-            currTime.setText(timeText);
-
+            DateFormat timeFormat = new SimpleDateFormat("E, dd MMM", Locale.getDefault());
+            String dateText = timeFormat.format(currentDate);
+            currTime.setText(dateText);
+            DateFormat updateTimeFormat = new SimpleDateFormat("HH:mm", Locale.getDefault());
+            String timeText = updateTimeFormat.format(currentDate);
+            String upateTimeFromRes = getResources().getString(R.string.update);
+            updateTimeTextView.setText(String.format(upateTimeFromRes, timeText));
             weatherStatusTextView.setText(wd.getWeatherStateInfo());
             pressureInfoTextView.setText(wd.getPressure());
             feelsLikeTextView.setText(wd.getFeelLike());
-
             tempMax = new ArrayList<>();
             tempMin = new ArrayList<>();
             weatherStateInfo = new ArrayList<>();
 
-            for (int i = 0; i < ChooseCityPresenter.FORECAST_DAYS; i++) {
+            for (int i = 0; i < OpenWeatherMap.FORECAST_DAYS; i++) {
                 WeatherData weatherData = weekWeatherData.get(i);
                 Log.d("tempM", "weatherData - "+ i+ weatherData.toString());
                 daysTemp.set(i, weatherData.getDegrees());
@@ -268,10 +280,10 @@ public class WeatherMainFragment extends Fragment implements RVOnItemClick {
 
     private int findDegreesLevel(int degrees){
         if(degrees <= -30) return 0;
-        if(degrees <= -20) return 7;
-        if(degrees <= -10) return 13;
-        if(degrees <= 0) return 20;
-        if(degrees <= 10) return 28;
+        if(degrees <= -20) return 15;
+        if(degrees <= -10) return 20;
+        if(degrees <= 0) return 25;
+        if(degrees <= 10) return 30;
         if(degrees <= 15) return 38;
         if(degrees <= 20) return 48;
         if(degrees <= 25) return 58;
@@ -305,7 +317,7 @@ public class WeatherMainFragment extends Fragment implements RVOnItemClick {
         Log.d(myLog, "CURDAY = " + curDay);
         ArrayList<String> daysList = new ArrayList<>();
         daysList.add(curDay);
-        for (int i = 1; i <ChooseCityPresenter.FORECAST_DAYS ; i++) {
+        for (int i = 1; i < OpenWeatherMap.FORECAST_DAYS ; i++) {
             Calendar instance = Calendar.getInstance(Locale.getDefault());
             instance.add(Calendar.DAY_OF_MONTH, i);
             Date nextDate = instance.getTime();
@@ -324,7 +336,7 @@ public class WeatherMainFragment extends Fragment implements RVOnItemClick {
     }
 
     private void addDefaultDataToWeatherStateInfo(){
-        for (int i = 0; i <ChooseCityPresenter.FORECAST_DAYS ; i++) {
+        for (int i = 0; i < OpenWeatherMap.FORECAST_DAYS ; i++) {
             weatherStateInfo.add("not found");
         }
     }
@@ -359,7 +371,7 @@ public class WeatherMainFragment extends Fragment implements RVOnItemClick {
 
     private void setupRecyclerView() {
         daysTemp = new ArrayList<>();
-        for (int i = 0; i < ChooseCityPresenter.FORECAST_DAYS ; i++) {
+        for (int i = 0; i < OpenWeatherMap.FORECAST_DAYS ; i++) {
             daysTemp.add(tempMax.get(i) + "/" + tempMin.get(i));
         }
 

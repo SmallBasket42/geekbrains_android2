@@ -1,4 +1,4 @@
-package ru.geekbrains.justweather;
+package ru.geekbrains.justweather.customViews;
 
 import android.content.Context;
 import android.content.res.TypedArray;
@@ -12,6 +12,7 @@ import android.util.Log;
 import android.view.MotionEvent;
 import android.view.View;
 import androidx.annotation.Nullable;
+import ru.geekbrains.justweather.R;
 
 public class ThermometerView extends View {
     private static final String TAG = "BatteryView";
@@ -26,14 +27,12 @@ public class ThermometerView extends View {
     private Paint levelPressedPaint;
     private Paint thermometerPaint;
     private Paint levelPaint;
-
     private int width = 0;
     private int height = 0;
 
     public static int level = 100;
     private boolean pressed = false;
     private OnClickListener listener;
-
     private static int padding = 10;
     private final static int round = 5;
     private final static int headRound = 25;
@@ -42,7 +41,6 @@ public class ThermometerView extends View {
         init();
     }
     public static int getLevel(){return level;}
-
     public ThermometerView(Context context, @Nullable AttributeSet attrs) {
         super(context, attrs);
         initAttr(context, attrs);
@@ -70,6 +68,7 @@ public class ThermometerView extends View {
         levelPressedColor = typedArray.getColor(R.styleable.ThermometerView_level_pressed_color, Color.RED);
         level = typedArray.getInteger(R.styleable.ThermometerView_level, 100);
         padding = typedArray.getInteger(R.styleable.ThermometerView_padding, 10);
+
         typedArray.recycle();
     }
 
@@ -89,7 +88,6 @@ public class ThermometerView extends View {
     protected void onSizeChanged(int w, int h, int oldw, int oldh) {
         super.onSizeChanged(w, h, oldw, oldh);
         Log.d(TAG, "onSizeChanged");
-
         width = w - getPaddingLeft() - getPaddingRight();
         height = h - getPaddingTop() - getPaddingBottom();
         thermometerRectangle.set(padding,padding,width-padding,height-padding);
@@ -98,8 +96,6 @@ public class ThermometerView extends View {
                 width-2*padding,height-(height/3)+2*padding);
         headRectangle.set(0,height-(height/3),width,height);
         headLevelRectangle.set(padding,height-((height/3)-padding), width-padding,height-padding);
-
-
     }
 
     @Override
@@ -118,6 +114,7 @@ public class ThermometerView extends View {
             canvas.drawRoundRect(headLevelRectangle, headRound, headRound, levelPaint);
         }
     }
+
     @Override
     public boolean onTouchEvent(MotionEvent event) {
         Log.d(TAG, "onTouchEvent");
@@ -138,31 +135,37 @@ public class ThermometerView extends View {
         Log.d(TAG, "onAttachedToWindow");
         super.onAttachedToWindow();
     }
+
     @Override
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
         Log.d(TAG, "onMeasure");
         super.onMeasure(widthMeasureSpec, heightMeasureSpec);
     }
+
     @Override
     public void layout(int l, int t, int r, int b) {
         Log.d(TAG, "layout");
         super.layout(l, t, r, b);
     }
+
     @Override
     protected void onLayout(boolean changed, int left, int top, int right, int bottom) {
         Log.d(TAG, "onLayout");
         super.onLayout(changed, left, top, right, bottom);
     }
+
     @Override
     public void draw(Canvas canvas) {
         Log.d(TAG, "draw");
         super.draw(canvas);
     }
+
     @Override
     public void invalidate() {
         Log.d(TAG, "invalidate");
         super.invalidate();
     }
+
     @Override
     public void requestLayout() {
         Log.d(TAG, "requestLayout");

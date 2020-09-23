@@ -140,7 +140,7 @@
         app:layout_constraintStart_toEndOf="@id/thermometerView"
         app:layout_constraintTop_toBottomOf="@+id/currTime" />
 
-    <ru.geekbrains.justweather.ThermometerView
+    <ru.geekbrains.justweather.customViews.ThermometerView
         android:id="@+id/thermometerView"
         android:layout_width="@dimen/thermometer_width"
         android:layout_height="@dimen/thermometer_height"
@@ -153,5 +153,18 @@
         app:padding = "@integer/thermometer_padding"
         app:level_color="@color/color_green"
         app:thermometer_color="@color/grey"/>
+
+    <TextView
+        android:id="@+id/update_time"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="18dp"
+        android:layout_marginEnd="10dp"
+        android:textSize="12sp"
+        android:text="@string/update"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintBottom_toTopOf="@id/hourlyWeatherRV"
+        tools:layout_editor_absoluteY="266dp" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

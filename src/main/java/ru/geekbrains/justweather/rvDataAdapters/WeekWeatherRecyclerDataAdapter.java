@@ -5,12 +5,9 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageView;
 import android.widget.TextView;
-
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
-
 import java.util.List;
-
 import ru.geekbrains.justweather.R;
 
 public class WeekWeatherRecyclerDataAdapter extends RecyclerView.Adapter<WeekWeatherRecyclerDataAdapter.ViewHolder> {
@@ -21,7 +18,6 @@ public class WeekWeatherRecyclerDataAdapter extends RecyclerView.Adapter<WeekWea
     private RVOnItemClick onItemClickCallback;
 
     public WeekWeatherRecyclerDataAdapter(List<String> days, List<String> daysTemp, List<Integer> weatherIcons, List<String> weatherStateInfo, RVOnItemClick onItemClickCallback) {
-        // Берем информацию из входящих списков, исключая первый элемент, чтобы не отображать текущий день (только 4 следующих):
         this.weatherIcons = weatherIcons.subList(1, weatherIcons.size());
         this.days = days.subList(1, days.size());
         this.daysTemp = daysTemp.subList(1, daysTemp.size());

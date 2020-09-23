@@ -102,4 +102,5 @@
     <string name="pleaseChooseCotyFirst">Please, choose city first</string>
     <string name="connection_failed">Connection failed, please check your connection.</string>
     <string name="sorry_alert_dialog">Sorry, I can\'t find weather forecast.</string>
+    <string name="update">update: %1$s</string>
 </resources>
