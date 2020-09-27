@@ -24,7 +24,7 @@
     <string name="pleaseChooseCotyFirst">Пожалуйста, сначала выберите город</string>
     <string name="about">О приложении</string>
     <string name="appName">Just Weather</string>
-    <string name="version">"Версия 1.0 "</string>
+    <string name="version">"Версия 1.1 "</string>
     <string name="delete_city">Удалить город?</string>
     <string name="delete">Удалить</string>
 

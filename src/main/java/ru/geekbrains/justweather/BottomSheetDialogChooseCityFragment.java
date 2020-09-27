@@ -2,6 +2,8 @@ package ru.geekbrains.justweather;
 
 import android.annotation.SuppressLint;
 import android.os.Bundle;
+import android.os.Handler;
+import android.util.Log;
 import android.view.KeyEvent;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -11,7 +13,6 @@ import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment;
-import java.net.MalformedURLException;
 import ru.geekbrains.justweather.events.OpenWeatherMainFragmentEvent;
 import ru.geekbrains.justweather.forecastRequest.ForecastRequest;
 import ru.geekbrains.justweather.forecastRequest.OpenWeatherMap;
@@ -51,39 +52,46 @@ public class BottomSheetDialogChooseCityFragment extends BottomSheetDialogFragme
             }
             return false;
         });
-
     }
 
     @SuppressLint("ResourceAsColor")
     private void checkIsShowingWeatherPossible(String cityName){
         OpenWeatherMap openWeatherMap = OpenWeatherMap.getInstance();
-        try {
-            ForecastRequest.getForecastFromServer(cityName, openWeatherMap.getWeatherUrl(cityName));
-        } catch (MalformedURLException e) {
-            e.printStackTrace();
-        }
-        if(ForecastRequest.responseCode == 200){
-            CurrentDataContainer.isFirstEnter = false;
-            new Thread(() -> {
-                CurrentDataContainer.getInstance().weekWeatherData = openWeatherMap.getWeekWeatherData(getResources());
-                CurrentDataContainer.getInstance().hourlyWeatherList = openWeatherMap.getHourlyWeatherData();
-                CurrentDataContainer.getInstance().currCityName = cityName;
-                CurrentDataContainer.getInstance().citiesList.add(0, cityName);
-                requireActivity().runOnUiThread(() -> {
-                    dismiss();
-                    EventBus.getBus().post(new OpenWeatherMainFragmentEvent());
-                });
-            }).start();
-        }
-        if(ForecastRequest.responseCode == 404){
-            enterCityEditText.setText("");
-            chooseCityTextView.setText(R.string.city_not_found);
-            chooseCityTextView.setTextColor(R.color.colorPrimary);
-        }
-        if(ForecastRequest.responseCode != 404 && ForecastRequest.responseCode != 200){
-            enterCityEditText.setText("");
-            chooseCityTextView.setText(R.string.connection_failed);
-            chooseCityTextView.setTextColor(R.color.colorPrimary);
-        }
+        ForecastRequest.getForecastFromServer(cityName);
+        Log.d("retrofit", "countDownLatch = " + ForecastRequest.getForecastResponseReceived().getCount());
+        Handler handler = new Handler();
+        new Thread(() -> {
+            try {
+                ForecastRequest.getForecastResponseReceived().await();
+
+                if(ForecastRequest.responseCode == 200) {
+                    CurrentDataContainer.isFirstEnter = false;
+                    CurrentDataContainer.getInstance().weekWeatherData = openWeatherMap.getWeekWeatherData(getResources());
+                    CurrentDataContainer.getInstance().hourlyWeatherList = openWeatherMap.getHourlyWeatherData();
+                    CurrentDataContainer.getInstance().currCityName = cityName;
+                    CurrentDataContainer.getInstance().citiesList.add(0, cityName);
+                    requireActivity().runOnUiThread(() -> {
+                        dismiss();
+                        EventBus.getBus().post(new OpenWeatherMainFragmentEvent());
+                    });
+                }
+                if(ForecastRequest.responseCode == 404){
+                    handler.post(()->{
+                        enterCityEditText.setText("");
+                        chooseCityTextView.setText(R.string.city_not_found);
+                        chooseCityTextView.setTextColor(R.color.colorPrimary);
+                    });
+                }
+                if(ForecastRequest.responseCode != 404 && ForecastRequest.responseCode != 200){
+                    handler.post(()->{
+                        enterCityEditText.setText("");
+                        chooseCityTextView.setText(R.string.connection_failed);
+                        chooseCityTextView.setTextColor(R.color.colorPrimary);
+                    });
+                }
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        }).start();
     }
 }

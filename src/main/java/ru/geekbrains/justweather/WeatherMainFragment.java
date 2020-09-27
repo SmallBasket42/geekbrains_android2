@@ -2,12 +2,15 @@ package ru.geekbrains.justweather;
 
 import android.content.res.Configuration;
 import android.content.res.Resources;
+import android.graphics.Color;
+import android.net.Uri;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
+import android.widget.Toast;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AlertDialog;
@@ -18,7 +21,8 @@ import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.DividerItemDecoration;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
-import java.net.MalformedURLException;
+import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
+import com.facebook.drawee.view.SimpleDraweeView;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -29,6 +33,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
 import ru.geekbrains.justweather.customViews.ThermometerView;
+import ru.geekbrains.justweather.events.OpenWeatherMainFragmentEvent;
 import ru.geekbrains.justweather.forecastRequest.ForecastRequest;
 import ru.geekbrains.justweather.forecastRequest.OpenWeatherMap;
 import ru.geekbrains.justweather.model.weather.HourlyWeatherData;
@@ -61,6 +66,10 @@ public class WeatherMainFragment extends Fragment implements RVOnItemClick {
     private ArrayList<String> citiesList;
     private ArrayList<WeatherData> weekWeatherData;
     private ArrayList<HourlyWeatherData> hourlyWeatherData;
+    private SimpleDraweeView weatherStatusImage;
+    private SwipeRefreshLayout swipeRefreshLayout;
+    private boolean isRefreshed;
+
 
     static WeatherMainFragment create(CurrentDataContainer container) {
         WeatherMainFragment fragment = new WeatherMainFragment();
@@ -99,6 +108,7 @@ public class WeatherMainFragment extends Fragment implements RVOnItemClick {
         setupRecyclerView();
         setupHourlyWeatherRecyclerView();
         setOnCityTextViewClickListener();
+        setOnSwipeRefreshListener();
         super.onViewCreated(view, savedInstanceState);
     }
 
@@ -111,25 +121,66 @@ public class WeatherMainFragment extends Fragment implements RVOnItemClick {
         Log.d(myLog, "WeatherMainFragment: onActivityCreated !AFTER updateChosenCity, currentCity: " + currentCity);
     }
 
+    private void setOnSwipeRefreshListener() {
+        swipeRefreshLayout.setOnRefreshListener(()-> {
+            CurrentDataContainer.isFirstEnter = false;
+//            EventBus.getBus().post(new OpenWeatherMainFragmentEvent());
+            OpenWeatherMap openWeatherMap = OpenWeatherMap.getInstance();
+
+            ForecastRequest.getForecastFromServer(currentCity);
+            Log.d("retrofit", "WeatherMain - countDownLatch = " + ForecastRequest.getForecastResponseReceived().getCount());
+
+            new Thread(() -> {
+                try {
+
+                    ForecastRequest.getForecastResponseReceived().await();
+
+                    weekWeatherData = openWeatherMap.getWeekWeatherData(getResources());
+                    hourlyWeatherData = openWeatherMap.getHourlyWeatherData();
+                    CurrentDataContainer.getInstance().weekWeatherData = weekWeatherData;
+                    CurrentDataContainer.getInstance().hourlyWeatherList = hourlyWeatherData;
+
+                    requireActivity().runOnUiThread(() -> {
+                        updateWeatherInfo(getResources());
+                        Log.d("swipe", "setOnSwipeRefreshListener -> weather updated");
+                        if(ForecastRequest.responseCode != 200) showAlertDialog();
+                        setupRecyclerView();
+                        setupHourlyWeatherRecyclerView();
+                        swipeRefreshLayout.setRefreshing(false);
+                    });
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+            }).start();
+        });
+        isRefreshed = true;
+    }
+
     private void takeWeatherInfoForFirstEnter(){
         if(CurrentDataContainer.isFirstEnter){
             Log.d(myLog, "*FIRST ENTER*");
             OpenWeatherMap openWeatherMap = OpenWeatherMap.getInstance();
-            try {
-                ForecastRequest.getForecastFromServer(currentCity, openWeatherMap.getWeatherUrl(currentCity));
-            } catch (MalformedURLException e) {
-                e.printStackTrace();
-            }
+
+            ForecastRequest.getForecastFromServer(currentCity);
+            Log.d("retrofit", "WeatherMain - countDownLatch = " + ForecastRequest.getForecastResponseReceived().getCount());
+
             new Thread(() -> {
-                weekWeatherData = openWeatherMap.getWeekWeatherData(getResources());
-                hourlyWeatherData = openWeatherMap.getHourlyWeatherData();
-                requireActivity().runOnUiThread(() -> {
-                    updateWeatherInfo(getResources());
-                    if(ForecastRequest.responseCode != 200) showAlertDialog();
-                    Log.d(myLog, "takeWeatherInfoForFirstEnter - after updateWeatherInfo;  CITIES LIST = "+ citiesList.toString());
-                    setupRecyclerView();
-                    setupHourlyWeatherRecyclerView();
-                });
+                try {
+                    ForecastRequest.getForecastResponseReceived().await();
+
+                    Log.d("retrofit", "response code for first enter = " + ForecastRequest.responseCode);
+                    weekWeatherData = openWeatherMap.getWeekWeatherData(getResources());
+                    hourlyWeatherData = openWeatherMap.getHourlyWeatherData();
+                    requireActivity().runOnUiThread(() -> {
+                        updateWeatherInfo(getResources());
+                        if(ForecastRequest.responseCode != 200) showAlertDialog();
+                        Log.d(myLog, "takeWeatherInfoForFirstEnter - after updateWeatherInfo;  CITIES LIST = "+ citiesList.toString());
+                        setupRecyclerView();
+                        setupHourlyWeatherRecyclerView();
+                    });
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
             }).start();
         } else {
             Log.d(myLog, "*NOT FIRST ENTER*");
@@ -161,6 +212,8 @@ public class WeatherMainFragment extends Fragment implements RVOnItemClick {
         currTime = view.findViewById(R.id.currTime);
         weatherStatusTextView = view.findViewById(R.id.cloudyInfoTextView);
         updateTimeTextView = view.findViewById(R.id.update_time);
+        weatherStatusImage = view.findViewById(R.id.weatherStatus);
+        swipeRefreshLayout = view.findViewById(R.id.swiperefresh);
     }
 
     private void setOnCityTextViewClickListener(){
@@ -189,17 +242,23 @@ public class WeatherMainFragment extends Fragment implements RVOnItemClick {
             CurrentDataContainer.getInstance().citiesList = citiesListFromRes;
             if(ForecastRequest.responseCode != 200) {
                 Log.d(myLog, "updateWeatherInfo from resources");
+
                 degrees.setText("+0°");
+                Log.d("swipe", "new degrees = " + degrees.getText().toString());
+
                 String windInfoFromRes = resources.getString(R.string.windInfo);
                 windInfoTextView.setText(String.format(windInfoFromRes, "0"));
+
                 Date currentDate = new Date();
                 DateFormat dateFormat = new SimpleDateFormat("E, dd mmm", Locale.getDefault());
                 String dateText = dateFormat.format(currentDate);
                 currTime.setText(dateText);
+
                 DateFormat updateTimeFormat = new SimpleDateFormat("HH:mm", Locale.getDefault());
                 String timeText = updateTimeFormat.format(currentDate);
                 String upateTimeFromRes = resources.getString(R.string.update);
                 updateTimeTextView.setText(String.format(upateTimeFromRes, timeText));
+
                 Log.d(myLog, "WEatherMainFragment - updateWeatherInfo - FIRSTENTER; responseCode != 200; CITIES LIST = " + citiesList.toString());
             } else {
                 settingsSwitchArray = CurrentDataContainer.getInstance().switchSettingsArray;
@@ -214,6 +273,7 @@ public class WeatherMainFragment extends Fragment implements RVOnItemClick {
             weekWeatherData = CurrentDataContainer.getInstance().weekWeatherData;
             hourlyWeatherData = CurrentDataContainer.getInstance().hourlyWeatherList;
             citiesList = CurrentDataContainer.getInstance().citiesList;
+
             isSettingsSwitchArrayTransferred(settingsSwitchArray);
             setNewWeatherData(weekWeatherData, hourlyWeatherData);
         }
@@ -239,19 +299,27 @@ public class WeatherMainFragment extends Fragment implements RVOnItemClick {
         if (weekWeatherData != null && weekWeatherData.size() != 0 && hourlyWeatherData != null && hourlyWeatherData.size() != 0) {
             WeatherData wd = weekWeatherData.get(0);
             degrees.setText(wd.getDegrees());
+            Log.d("swipe", "new degrees = " + degrees.getText().toString());
+
             ThermometerView.level = findDegreesLevel(wd.getIntDegrees());
             windInfoTextView.setText(wd.getWindInfo());
+
             Date currentDate = new Date();
             DateFormat timeFormat = new SimpleDateFormat("E, dd MMM", Locale.getDefault());
             String dateText = timeFormat.format(currentDate);
             currTime.setText(dateText);
+
             DateFormat updateTimeFormat = new SimpleDateFormat("HH:mm", Locale.getDefault());
             String timeText = updateTimeFormat.format(currentDate);
             String upateTimeFromRes = getResources().getString(R.string.update);
             updateTimeTextView.setText(String.format(upateTimeFromRes, timeText));
+
             weatherStatusTextView.setText(wd.getWeatherStateInfo());
             pressureInfoTextView.setText(wd.getPressure());
             feelsLikeTextView.setText(wd.getFeelLike());
+
+            setWeatherStatusImage(wd.getWeatherIcon());
+
             tempMax = new ArrayList<>();
             tempMin = new ArrayList<>();
             weatherStateInfo = new ArrayList<>();
@@ -275,6 +343,42 @@ public class WeatherMainFragment extends Fragment implements RVOnItemClick {
                 hourlyWeatherIcon.set(i,iconId);
                 hourlyTemperature.set(i, hourlyData.getTemperature());
             }
+        }
+    }
+
+    private void setWeatherStatusImage(String weatherIconId){
+        if (weatherIconId.equals("thunderstorm")){
+            Uri uri = Uri.parse("http://192.168.1.35/users-images/thumbs/user_id/ffffffffffff1f1f.png");
+            weatherStatusImage.setImageURI(uri);
+        }
+        else if (weatherIconId.equals("shower_rain")) {
+            weatherStatusImage.setImageResource(R.drawable.rain_weather_status_3);
+        }
+        else if (weatherIconId.equals("rain_day")) {
+            weatherStatusImage.setImageResource(R.drawable.rain_weather_status_3);
+        }
+        else if (weatherIconId.equals("snow")) {
+            weatherStatusImage.setImageResource(R.drawable.snow_weather_status_2);
+
+        }
+        else if (weatherIconId.equals("mist")) {
+            weatherStatusImage.setColorFilter(Color.WHITE);
+            weatherStatusImage.setImageResource(R.drawable.mist_weather_status);
+        }
+        else if (weatherIconId.equals("clear_sky_day")) {
+            Uri uri = Uri.parse("https://www.nicepng.com/png/full/389-3899694_beach-illustration-sunshine-rays-white-cinematic-bars-png.png");
+            weatherStatusImage.setImageURI(uri);
+        }
+        else if (weatherIconId.equals("few_clouds_day")) {
+            weatherStatusImage.setImageResource(R.drawable.little_cloudy_weater_status);
+        }
+        else if (weatherIconId.equals("scattered_clouds")) {
+            Uri uri = Uri.parse("https://cdn.clipart.email/ebf7869a3ef385ffb67b8a2a0dcba02a_cartoon-clouds-png-transparent-without-background-image-free-png-_1000-824.png");
+            weatherStatusImage.setImageURI(uri);
+        }
+        else if (weatherIconId.equals("broken_clouds")) {
+            Uri uri = Uri.parse("https://cdn.clipart.email/ebf7869a3ef385ffb67b8a2a0dcba02a_cartoon-clouds-png-transparent-without-background-image-free-png-_1000-824.png");
+            weatherStatusImage.setImageURI(uri);
         }
     }
 
@@ -379,11 +483,11 @@ public class WeatherMainFragment extends Fragment implements RVOnItemClick {
         LinearLayoutManager layoutManager = new LinearLayoutManager(requireActivity().getBaseContext(), LinearLayoutManager.VERTICAL, false);
         WeekWeatherRecyclerDataAdapter weekWeatherAdapter = new WeekWeatherRecyclerDataAdapter(days, daysTemp, weatherIcon, weatherStateInfo, this);
 
-        DividerItemDecoration itemDecoration = new DividerItemDecoration(requireActivity().getBaseContext(),
-                LinearLayoutManager.VERTICAL);
-        itemDecoration.setDrawable(Objects.requireNonNull(
-                ContextCompat.getDrawable(requireActivity().getBaseContext(), R.drawable.decorator_item)));
-        weatherRecyclerView.addItemDecoration(itemDecoration);
+        if (!isRefreshed) {
+            DividerItemDecoration itemDecoration = new DividerItemDecoration(requireActivity().getBaseContext(), LinearLayoutManager.VERTICAL);
+            itemDecoration.setDrawable(Objects.requireNonNull(ContextCompat.getDrawable(requireActivity().getBaseContext(), R.drawable.decorator_item)));
+            weatherRecyclerView.addItemDecoration(itemDecoration);
+        }
 
         weatherRecyclerView.setLayoutManager(layoutManager);
         weatherRecyclerView.setAdapter(weekWeatherAdapter);

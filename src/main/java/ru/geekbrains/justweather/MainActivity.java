@@ -6,6 +6,10 @@ import android.os.Bundle;
 import android.util.Log;
 import android.view.MenuItem;
 import android.view.Menu;
+import com.facebook.drawee.backends.pipeline.Fresco;
+import com.facebook.imagepipeline.core.ImagePipelineConfig;
+import com.facebook.imagepipeline.core.ImageTranscoderType;
+import com.facebook.imagepipeline.core.MemoryChunkType;
 import com.google.android.material.navigation.NavigationView;
 import com.squareup.otto.Subscribe;
 import androidx.annotation.NonNull;
@@ -15,6 +19,7 @@ import androidx.fragment.app.FragmentTransaction;
 import androidx.drawerlayout.widget.DrawerLayout;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
+
 import ru.geekbrains.justweather.events.OpenWeatherMainFragmentEvent;
 
 public class MainActivity extends AppCompatActivity {
@@ -35,9 +40,9 @@ public class MainActivity extends AppCompatActivity {
                 this, drawer, toolbar, R.string.navigation_drawer_open, R.string.navigation_drawer_close);
         drawer.addDrawerListener(toggle);
         toggle.syncState();
-
         setHomeFragment();
         setOnClickForSideMenuItems();
+        Fresco.initialize(this);
     }
 
     @Override

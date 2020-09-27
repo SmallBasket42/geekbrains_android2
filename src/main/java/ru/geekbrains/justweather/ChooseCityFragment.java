@@ -3,6 +3,7 @@ package ru.geekbrains.justweather;
 import android.app.Activity;
 import android.content.Context;
 import android.os.Bundle;
+import android.os.Handler;
 import android.util.Log;
 import android.view.KeyEvent;
 import android.view.LayoutInflater;
@@ -19,7 +20,6 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 import com.google.android.material.snackbar.Snackbar;
 import com.google.android.material.textfield.TextInputEditText;
-import java.net.MalformedURLException;
 import java.util.ArrayList;
 import java.util.Objects;
 import java.util.regex.Pattern;
@@ -46,7 +46,8 @@ public class ChooseCityFragment extends Fragment implements RVOnItemClick {
     Pattern checkEnterCity = Pattern.compile("^[а-яА-ЯЁa-zA-Z]+(?:[\\s-][а-яА-ЯЁa-zA-Z]+)*$");
 
     static ChooseCityFragment create(CurrentDataContainer container) {
-        ChooseCityFragment fragment = new ChooseCityFragment();    // создание
+        ChooseCityFragment fragment = new ChooseCityFragment();
+
         Bundle args = new Bundle();
         args.putSerializable("currCity", container);
         fragment.setArguments(args);
@@ -97,34 +98,46 @@ public class ChooseCityFragment extends Fragment implements RVOnItemClick {
                         String previousCity = CurrentDataContainer.getInstance().currCityName;
                         currentCity = enterCity.getText().toString();
                         takeWeatherInfoForFiveDays();
-                        if (ForecastRequest.responseCode == 404) {
-                            Log.d(myLog, "RESPONSE COD = " + ForecastRequest.responseCode + " CURR CITY = " + currentCity);
-                            showAlertDialog(R.string.city_not_found);
-                            currentCity = previousCity;
-                        }
-                        if (ForecastRequest.responseCode == 200) {
-                            CurrentDataContainer.getInstance().currCityName = currentCity;
-                            Log.d(myLog, "RESPONSE COD = " + ForecastRequest.responseCode + " CURR CITY = " + currentCity);
-                            new Thread(() -> {
-                                weekWeatherData = openWeatherMap.getWeekWeatherData(getResources());
-                                hourlyWeatherList = openWeatherMap.getHourlyWeatherData();
-                                requireActivity().runOnUiThread(() -> {
-                                    CurrentDataContainer.getInstance().weekWeatherData = weekWeatherData;
-                                    CurrentDataContainer.getInstance().hourlyWeatherList = hourlyWeatherList;
-                                    adapter.addNewCity(currentCity);
-                                    Toast.makeText(requireActivity(), currentCity, Toast.LENGTH_SHORT).show();
-                                    updateWeatherData();
-                                    enterCity.setText("");
-                                });
-                            }).start();
-                        }
-                        if (ForecastRequest.responseCode != 200 && ForecastRequest.responseCode != 404) {
-                            Log.d(myLog, "RESPONSE COD = " + ForecastRequest.responseCode + " CURR CITY = " + currentCity);
-                            showAlertDialog(R.string.connection_failed);
-                            currentCity = previousCity;
-                        }
-                        Log.d(myLog, "ChooseCityFragment - setOnBtnOkEnterCityClickListener -> BEFORE flag");
+                        Handler handler = new Handler();
+                        new Thread(() -> {
+                            try {
+                                ForecastRequest.getForecastResponseReceived().await();
+
+                                if (ForecastRequest.responseCode == 404) {
+                                    Log.d(myLog, "RESPONSE COD = " + ForecastRequest.responseCode + " CURR CITY = " + currentCity);
+                                    handler.post(()->{
+                                        showAlertDialog(R.string.city_not_found);
+                                        currentCity = previousCity;
+                                    });
+                                }
+                                if (ForecastRequest.responseCode == 200) {
+                                    CurrentDataContainer.isFirstEnter = false;
+                                    CurrentDataContainer.getInstance().currCityName = currentCity;
+                                    Log.d(myLog, "RESPONSE COD = " + ForecastRequest.responseCode + " CURR CITY = " + currentCity);
+                                    weekWeatherData = openWeatherMap.getWeekWeatherData(getResources());
+                                    hourlyWeatherList = openWeatherMap.getHourlyWeatherData();
+                                    requireActivity().runOnUiThread(() -> {
+                                        CurrentDataContainer.getInstance().weekWeatherData = weekWeatherData;
+                                        CurrentDataContainer.getInstance().hourlyWeatherList = hourlyWeatherList;
+                                        adapter.addNewCity(currentCity);
+                                        Toast.makeText(requireActivity(), currentCity, Toast.LENGTH_SHORT).show();
+                                        updateWeatherData();
+                                        enterCity.setText("");
+                                    });
+                                }
+                                if (ForecastRequest.responseCode != 200 && ForecastRequest.responseCode != 404) {
+                                    Log.d(myLog, "RESPONSE COD = " + ForecastRequest.responseCode + " CURR CITY = " + currentCity);
+                                    handler.post(()-> {
+                                        showAlertDialog(R.string.connection_failed);
+                                        currentCity = previousCity;
+                                    });
+                                }
+                            } catch (InterruptedException e) {
+                                e.printStackTrace();
+                            }
+                        }).start();
                     }
+                    Log.d(myLog, "ChooseCityFragment - setOnBtnOkEnterCityClickListener -> BEFORE flag");
                 }
                 return true;
             }
@@ -157,9 +170,17 @@ public class ChooseCityFragment extends Fragment implements RVOnItemClick {
         CurrentDataContainer.getInstance().currCityName = currentCity;
         adapter.putChosenCityToTopInCitiesList(currentCity);
         takeWeatherInfoForFiveDays();
-        if(ForecastRequest.responseCode == 200) {
-            Log.d(myLog, "RESPONSE COD = " + ForecastRequest.responseCode + " CURR CITY = " + currentCity);
-            new Thread(() -> {
+        Handler handler = new Handler();
+        new Thread(() -> {
+            try {
+                ForecastRequest.getForecastResponseReceived().await();
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+            if(ForecastRequest.responseCode == 200) {
+                CurrentDataContainer.isFirstEnter = false;
+                Log.d(myLog, "RESPONSE COD = " + ForecastRequest.responseCode + " CURR CITY = " + currentCity);
+
                 weekWeatherData = openWeatherMap.getWeekWeatherData(getResources());
                 hourlyWeatherList = openWeatherMap.getHourlyWeatherData();
                 requireActivity().runOnUiThread(() -> {
@@ -167,12 +188,11 @@ public class ChooseCityFragment extends Fragment implements RVOnItemClick {
                     CurrentDataContainer.getInstance().hourlyWeatherList = hourlyWeatherList;
                     updateWeatherData();
                 });
-            }).start();
-        } else {
-            Log.d(myLog, "RESPONSE COD = " + ForecastRequest.responseCode + " CURR CITY = " + currentCity);
-            showAlertDialog(R.string.connection_failed);
-            return;
-        }
+            } else {
+                Log.d(myLog, "RESPONSE COD = " + ForecastRequest.responseCode + " CURR CITY = " + currentCity);
+                handler.post(()->showAlertDialog(R.string.connection_failed));
+            }
+        }).start();
         Log.d(myLog, "ChooseCityFragment - setOnBtnOkEnterCityClickListener -> BEFORE flag");
     }
 
@@ -192,13 +212,13 @@ public class ChooseCityFragment extends Fragment implements RVOnItemClick {
     }
 
     private void takeWeatherInfoForFiveDays(){
-        try {
-            ForecastRequest.getForecastFromServer(currentCity, openWeatherMap.getWeatherUrl(currentCity));
-        } catch (MalformedURLException e) {
-            Log.e(myLog, "Fail URI", e);
-            e.printStackTrace();
-        }
-        if(ForecastRequest.responseCode == 200) CurrentDataContainer.isFirstEnter = false;
+
+        ForecastRequest.getForecastFromServer(currentCity);
+
+        Log.d("retrofit", "ChooseCityFragment - countDownLatch = " + ForecastRequest.getForecastResponseReceived().getCount());
+
+
+
     }
 
     private void setupRecyclerView() {
