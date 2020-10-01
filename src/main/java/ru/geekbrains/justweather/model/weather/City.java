@@ -14,7 +14,7 @@ public class City {
     private String name;
     @SerializedName("coord")
     @Expose
-    private ru.geekbrains.justweather.model.weather.Coord coord;
+    private Coord coord;
     @SerializedName("country")
     @Expose
     private String country;
@@ -47,11 +47,11 @@ public class City {
         this.name = name;
     }
 
-    public ru.geekbrains.justweather.model.weather.Coord getCoord() {
+    public Coord getCoord() {
         return coord;
     }
 
-    public void setCoord(ru.geekbrains.justweather.model.weather.Coord coord) {
+    public void setCoord(Coord coord) {
         this.coord = coord;
     }
 

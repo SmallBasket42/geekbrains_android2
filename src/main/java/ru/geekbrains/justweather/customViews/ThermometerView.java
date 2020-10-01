@@ -18,8 +18,8 @@ public class ThermometerView extends View {
     private static final String TAG = "BatteryView";
 
     private int thermometerColor = Color.GRAY;
-    private int levelColor = Color.GREEN;
-    private int levelPressedColor = Color.RED;
+    public static int levelColor = Color.GREEN;
+    private int levelPressedColor = Color.WHITE;
     private RectF thermometerRectangle = new RectF();
     private Rect levelRectangle = new Rect();
     private RectF headRectangle = new RectF();
@@ -29,18 +29,19 @@ public class ThermometerView extends View {
     private Paint levelPaint;
     private int width = 0;
     private int height = 0;
-
     public static int level = 100;
     private boolean pressed = false;
     private OnClickListener listener;
+
     private static int padding = 10;
-    private final static int round = 5;
-    private final static int headRound = 25;
+    private final static int round = 25;
+    private final static int headRound = 30;
     public ThermometerView(Context context) {
         super(context);
         init();
     }
     public static int getLevel(){return level;}
+
     public ThermometerView(Context context, @Nullable AttributeSet attrs) {
         super(context, attrs);
         initAttr(context, attrs);
@@ -63,12 +64,13 @@ public class ThermometerView extends View {
 
         TypedArray typedArray = context.obtainStyledAttributes(attrs, R.styleable.ThermometerView, 0,
                 0);
+
         thermometerColor = typedArray.getColor(R.styleable.ThermometerView_thermometer_color, Color.GRAY);
+
         levelColor = typedArray.getColor(R.styleable.ThermometerView_level_color, Color.GREEN);
-        levelPressedColor = typedArray.getColor(R.styleable.ThermometerView_level_pressed_color, Color.RED);
+        levelPressedColor = typedArray.getColor(R.styleable.ThermometerView_level_pressed_color, Color.WHITE);
         level = typedArray.getInteger(R.styleable.ThermometerView_level, 100);
         padding = typedArray.getInteger(R.styleable.ThermometerView_padding, 10);
-
         typedArray.recycle();
     }
 
@@ -79,6 +81,7 @@ public class ThermometerView extends View {
         levelPaint = new Paint();
         levelPaint.setColor(levelColor);
         levelPaint.setStyle(Paint.Style.FILL);
+        // Задать "краску" для нажатия на элемент +
         levelPressedPaint = new Paint();
         levelPressedPaint.setColor(levelPressedColor);
         levelPressedPaint.setStyle(Paint.Style.FILL);
@@ -91,11 +94,8 @@ public class ThermometerView extends View {
         width = w - getPaddingLeft() - getPaddingRight();
         height = h - getPaddingTop() - getPaddingBottom();
         thermometerRectangle.set(padding,padding,width-padding,height-padding);
-        levelRectangle.set(2 * padding,
-                (height-height/3) - (int)((height - height/3)*((double)level/(double)100)) + 2*padding,
-                width-2*padding,height-(height/3)+2*padding);
-        headRectangle.set(0,height-(height/3),width,height);
-        headLevelRectangle.set(padding,height-((height/3)-padding), width-padding,height-padding);
+        headRectangle.set(0,height-width, width, height);
+        headLevelRectangle.set(padding,height-width+padding, width-padding,height-padding);
     }
 
     @Override
@@ -110,9 +110,16 @@ public class ThermometerView extends View {
             canvas.drawRect(levelRectangle, levelPressedPaint);
             canvas.drawRoundRect(headLevelRectangle, headRound, headRound, levelPressedPaint);
         } else {
+            levelPaint.setColor(levelColor);
+            setLevelRectangle();
             canvas.drawRect(levelRectangle, levelPaint);
             canvas.drawRoundRect(headLevelRectangle, headRound, headRound, levelPaint);
         }
+    }
+
+    private void setLevelRectangle(){
+        levelRectangle.set(2*padding, (height-width+padding) - (int)((height-width)*((float)level/100))+padding,
+                width-2*padding, height-width+padding+padding);
     }
 
     @Override
@@ -126,6 +133,7 @@ public class ThermometerView extends View {
         invalidate();
         return true;
     }
+
     @Override
     public void setOnClickListener(View.OnClickListener listener){
         this.listener = listener;
@@ -172,3 +180,5 @@ public class ThermometerView extends View {
         super.requestLayout();
     }
 }
+
+

@@ -1,21 +1,23 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <dimen name="degrees">72sp</dimen>
-    <dimen name="chooseYourCity_textview">17sp</dimen>
-    <dimen name="orChooseFromList_textview">17sp</dimen>
-    <dimen name="enterCity_editText_marginTop">20dp</dimen>
-    <dimen name="orChooseFromList_textview_marginTop">30dp</dimen>
-    <dimen name="citiesRV_textView_paddingBottom">8dp</dimen>
-    <dimen name="citiesRM_textView_paddingTop">8dp</dimen>
-    <dimen name="citiesRV_marginTop_in_fragment_choose_city">10dp</dimen>
-    <dimen name="okEnterCity_btn_textSize">14sp</dimen>
-    <dimen name="citiesRVTextSize">14sp</dimen>
-    <dimen name="citiesRVLayoutHight">170dp</dimen>
+    <dimen name="degrees">65sp</dimen>
+    <dimen name="chooseYourCity_textview">13sp</dimen>
+    <dimen name="orChooseFromList_textview">13sp</dimen>
+    <dimen name="enterCity_editText_marginTop">10dp</dimen>
+    <dimen name="orChooseFromList_textview_marginTop">0dp</dimen>
+    <dimen name="citiesRV_textView_paddingBottom">0dp</dimen>
+    <dimen name="citiesRM_textView_paddingTop">5dp</dimen>
+    <dimen name="citiesRV_marginTop_in_fragment_choose_city">5dp</dimen>
+    <dimen name="okEnterCity_btn_textSize">11sp</dimen>
+    <dimen name="citiesRVTextSize">12sp</dimen>
+    <dimen name="citiesRVLayoutHight">150dp</dimen>
     <dimen name="activity_horizontal_margin">16dp</dimen>
     <dimen name="activity_vertical_margin">16dp</dimen>
     <dimen name="nav_header_vertical_spacing">8dp</dimen>
     <dimen name="nav_header_height">176dp</dimen>
     <dimen name="fab_margin">16dp</dimen>
-    <dimen name="thermometer_height">81dp</dimen>
-    <dimen name="thermometer_width">27dp</dimen>
+    <dimen name="thermometer_height">72dp</dimen>
+    <dimen name="thermometer_width">24dp</dimen>
+    <dimen name="hourly_weather_marginStart">7dp</dimen>
+    <dimen name="weather_rv_date_width">27dp</dimen>
 </resources>

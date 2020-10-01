@@ -2,7 +2,9 @@ package ru.geekbrains.justweather.forecastRequest;
 
 import android.util.Log;
 import androidx.annotation.NonNull;
+
 import java.util.concurrent.CountDownLatch;
+
 import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
@@ -21,7 +23,7 @@ public class ForecastRequest {
     public static void getForecastFromServer(String currentCity) {
         forecastResponseReceived = new CountDownLatch(1);
         Log.d("retrofit", "countDounLatch = " + forecastResponseReceived.getCount());
-        OpenWeatherRepo.getInstance().getAPI().loadWeather(currentCity,"metric",
+       OpenWeatherRepo.getInstance().getAPI().loadWeather(currentCity,"metric",
                 "849b888638d27a2b5c80b65cfc590f12").enqueue(new Callback<WeatherRequest>() {
             @Override
             public void onResponse(@NonNull Call<WeatherRequest> call,
@@ -45,12 +47,13 @@ public class ForecastRequest {
                 Log.d("retrofit", "weatherRequest is null: " + (weatherRequest == null));
             }
 
+            //сбой при интернет подключении
             @SuppressWarnings("NullableProblems")
             @Override
             public void onFailure(Call<WeatherRequest> call, Throwable t) {
                 forecastResponseReceived.countDown();
                 responseCode = 0;
             }
-        });
+       });
     }
 }

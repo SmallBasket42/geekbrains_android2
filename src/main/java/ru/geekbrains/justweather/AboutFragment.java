@@ -25,7 +25,6 @@ public class AboutFragment extends Fragment {
 
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
-//        Log.d("Theme", "onCreate - fragment WeatherMainFragment");
         Log.d("myLog", "onCreate - fragment AboutFragment");
         super.onCreate(savedInstanceState);
     }
@@ -44,7 +43,7 @@ public class AboutFragment extends Fragment {
         sendMail.setOnClickListener(view1 -> {
             Intent emailIntent = new Intent(Intent.ACTION_SENDTO, Uri.fromParts(
                     "mailto","alexander.mukha23@gmail.com", null));
-            emailIntent.putExtra(Intent.EXTRA_SUBJECT, "JustWeather");
+            emailIntent.putExtra(Intent.EXTRA_SUBJECT, "Just Weather");
             startActivity(Intent.createChooser(emailIntent, "Send email"));
         });
         super.onViewCreated(view, savedInstanceState);

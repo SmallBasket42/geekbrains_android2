@@ -31,3 +31,4 @@ public class OpenWeatherRepo {
         return adapter.create(OpenWeatherInterface.class);
     }
 }
+

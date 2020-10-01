@@ -1,8 +1,11 @@
 package ru.geekbrains.justweather;
 
+import android.content.Context;
+import android.content.SharedPreferences;
 import android.content.res.Configuration;
 import android.content.res.Resources;
-import android.graphics.Color;
+import android.graphics.Canvas;
+import android.graphics.PorterDuff;
 import android.net.Uri;
 import android.os.Bundle;
 import android.util.Log;
@@ -10,7 +13,6 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
-import android.widget.Toast;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AlertDialog;
@@ -18,7 +20,6 @@ import androidx.constraintlayout.widget.ConstraintLayout;
 import androidx.constraintlayout.widget.ConstraintSet;
 import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
-import androidx.recyclerview.widget.DividerItemDecoration;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
@@ -33,24 +34,26 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
 import ru.geekbrains.justweather.customViews.ThermometerView;
-import ru.geekbrains.justweather.events.OpenWeatherMainFragmentEvent;
 import ru.geekbrains.justweather.forecastRequest.ForecastRequest;
 import ru.geekbrains.justweather.forecastRequest.OpenWeatherMap;
-import ru.geekbrains.justweather.model.weather.HourlyWeatherData;
-import ru.geekbrains.justweather.model.weather.WeatherData;
+import ru.geekbrains.justweather.model.HourlyWeatherData;
+import ru.geekbrains.justweather.model.WeatherData;
+import ru.geekbrains.justweather.rvDataAdapters.CurrentWeatherRecyclerDataAdapter;
 import ru.geekbrains.justweather.rvDataAdapters.HourlyWeatherRecyclerDataAdapter;
 import ru.geekbrains.justweather.rvDataAdapters.RVOnItemClick;
 import ru.geekbrains.justweather.rvDataAdapters.WeekWeatherRecyclerDataAdapter;
+import static android.content.Context.MODE_PRIVATE;
 
 public class WeatherMainFragment extends Fragment implements RVOnItemClick {
     public static String currentCity = "";
     private TextView cityTextView;
     private TextView degrees;
-    private TextView feelsLikeTextView, pressureInfoTextView, updateTimeTextView;
+    private TextView updateTimeTextView;
     final String myLog = "myLog";
-    private RecyclerView weatherRecyclerView;
+    private RecyclerView currentWeatherRecyclerView, weatherRecyclerView;
     private RecyclerView hourlyRecyclerView;
     private List<Integer> weatherIcon = new ArrayList<>();
+    private List<Integer> cardViewColor = new ArrayList<>();
     private List<String> days = new ArrayList<>();
     private List<String> daysTemp = new ArrayList<>();
     private List<String> tempMax = new ArrayList<>();
@@ -59,7 +62,7 @@ public class WeatherMainFragment extends Fragment implements RVOnItemClick {
     private List<String> hourlyTime = new ArrayList<>();
     private List<Integer> hourlyWeatherIcon = new ArrayList<>();
     private List<String> hourlyTemperature = new ArrayList<>();
-    private TextView windInfoTextView;
+    private List<String> currentWeather = new ArrayList<>();
     private TextView currTime;
     private TextView weatherStatusTextView;
     private ArrayList<String> citiesListFromRes;
@@ -68,8 +71,7 @@ public class WeatherMainFragment extends Fragment implements RVOnItemClick {
     private ArrayList<HourlyWeatherData> hourlyWeatherData;
     private SimpleDraweeView weatherStatusImage;
     private SwipeRefreshLayout swipeRefreshLayout;
-    private boolean isRefreshed;
-
+    private ThermometerView thermometerView;
 
     static WeatherMainFragment create(CurrentDataContainer container) {
         WeatherMainFragment fragment = new WeatherMainFragment();
@@ -101,12 +103,15 @@ public class WeatherMainFragment extends Fragment implements RVOnItemClick {
         takeCitiesListFromResources(getResources());
         generateDaysList();
         addDataToWeatherIconsIdFromRes(weatherIcon);
+        addDefaultDataToCardViewColorList();
         addDefaultDataToDaysTempFromRes(getResources());
         addDefaultDataToHourlyWeatherRV(getResources());
+        addDefaultDataToCurrentWeatherRV(getResources());
         addDefaultDataToWeatherStateInfo();
         updateWeatherInfo(getResources());
         setupRecyclerView();
         setupHourlyWeatherRecyclerView();
+        setupCurrentWeatherRecyclerView();
         setOnCityTextViewClickListener();
         setOnSwipeRefreshListener();
         super.onViewCreated(view, savedInstanceState);
@@ -116,15 +121,18 @@ public class WeatherMainFragment extends Fragment implements RVOnItemClick {
     public void onActivityCreated(Bundle savedInstanceState) {
         super.onActivityCreated(savedInstanceState);
         Log.d(myLog, "WeatherMainFragment - savedInstanceState exists = " + (savedInstanceState != null));
-        updateChosenCity(savedInstanceState);
+        updateChosenCity();
         takeWeatherInfoForFirstEnter();
         Log.d(myLog, "WeatherMainFragment: onActivityCreated !AFTER updateChosenCity, currentCity: " + currentCity);
+    }
+
+    private void takeCityFromSharedPreference(SharedPreferences preferences) {
+        currentCity = preferences.getString("current city", "Sochi");
     }
 
     private void setOnSwipeRefreshListener() {
         swipeRefreshLayout.setOnRefreshListener(()-> {
             CurrentDataContainer.isFirstEnter = false;
-//            EventBus.getBus().post(new OpenWeatherMainFragmentEvent());
             OpenWeatherMap openWeatherMap = OpenWeatherMap.getInstance();
 
             ForecastRequest.getForecastFromServer(currentCity);
@@ -132,7 +140,6 @@ public class WeatherMainFragment extends Fragment implements RVOnItemClick {
 
             new Thread(() -> {
                 try {
-
                     ForecastRequest.getForecastResponseReceived().await();
 
                     weekWeatherData = openWeatherMap.getWeekWeatherData(getResources());
@@ -146,6 +153,7 @@ public class WeatherMainFragment extends Fragment implements RVOnItemClick {
                         if(ForecastRequest.responseCode != 200) showAlertDialog();
                         setupRecyclerView();
                         setupHourlyWeatherRecyclerView();
+                        setupCurrentWeatherRecyclerView();
                         swipeRefreshLayout.setRefreshing(false);
                     });
                 } catch (InterruptedException e) {
@@ -153,7 +161,6 @@ public class WeatherMainFragment extends Fragment implements RVOnItemClick {
                 }
             }).start();
         });
-        isRefreshed = true;
     }
 
     private void takeWeatherInfoForFirstEnter(){
@@ -177,6 +184,7 @@ public class WeatherMainFragment extends Fragment implements RVOnItemClick {
                         Log.d(myLog, "takeWeatherInfoForFirstEnter - after updateWeatherInfo;  CITIES LIST = "+ citiesList.toString());
                         setupRecyclerView();
                         setupHourlyWeatherRecyclerView();
+                        setupCurrentWeatherRecyclerView();
                     });
                 } catch (InterruptedException e) {
                     e.printStackTrace();
@@ -204,16 +212,15 @@ public class WeatherMainFragment extends Fragment implements RVOnItemClick {
     private void initViews(View view) {
         cityTextView = view.findViewById(R.id.city);
         degrees = view.findViewById(R.id.degrees);
-        feelsLikeTextView = view.findViewById(R.id.feelsLikeTextView);
-        pressureInfoTextView = view.findViewById(R.id.pressureInfoTextView);
         hourlyRecyclerView = view.findViewById(R.id.hourlyWeatherRV);
         weatherRecyclerView = view.findViewById(R.id.weekWeatherRV);
-        windInfoTextView = view.findViewById(R.id.windSpeed);
+        currentWeatherRecyclerView = view.findViewById(R.id.currentWeatherRV);
         currTime = view.findViewById(R.id.currTime);
         weatherStatusTextView = view.findViewById(R.id.cloudyInfoTextView);
         updateTimeTextView = view.findViewById(R.id.update_time);
         weatherStatusImage = view.findViewById(R.id.weatherStatus);
         swipeRefreshLayout = view.findViewById(R.id.swiperefresh);
+        thermometerView = view.findViewById(R.id.thermometerView);
     }
 
     private void setOnCityTextViewClickListener(){
@@ -225,32 +232,23 @@ public class WeatherMainFragment extends Fragment implements RVOnItemClick {
         });
     }
 
-    private String getCityName() {
-        currentCity = CurrentDataContainer.getInstance().currCityName;
-        return currentCity;
-    }
-
-    private void updateChosenCity(Bundle savedInstanceState) {
-        if (savedInstanceState == null) cityTextView.setText(getCityName());
+    private void updateChosenCity() {
+        SharedPreferences sharedPreferences = requireActivity().getSharedPreferences("settings", MODE_PRIVATE);
+        takeCityFromSharedPreference(sharedPreferences);
         cityTextView.setText(currentCity);
     }
 
     private  void updateWeatherInfo(Resources resources){
-        boolean[] settingsSwitchArray;
         this.citiesList = citiesListFromRes;
         if(CurrentDataContainer.isFirstEnter) {
-            CurrentDataContainer.getInstance().citiesList = citiesListFromRes;
             if(ForecastRequest.responseCode != 200) {
                 Log.d(myLog, "updateWeatherInfo from resources");
 
                 degrees.setText("+0°");
                 Log.d("swipe", "new degrees = " + degrees.getText().toString());
 
-                String windInfoFromRes = resources.getString(R.string.windInfo);
-                windInfoTextView.setText(String.format(windInfoFromRes, "0"));
-
                 Date currentDate = new Date();
-                DateFormat dateFormat = new SimpleDateFormat("E, dd mmm", Locale.getDefault());
+                DateFormat dateFormat = new SimpleDateFormat("E, dd MMM", Locale.getDefault());
                 String dateText = dateFormat.format(currentDate);
                 currTime.setText(dateText);
 
@@ -261,72 +259,44 @@ public class WeatherMainFragment extends Fragment implements RVOnItemClick {
 
                 Log.d(myLog, "WEatherMainFragment - updateWeatherInfo - FIRSTENTER; responseCode != 200; CITIES LIST = " + citiesList.toString());
             } else {
-                settingsSwitchArray = CurrentDataContainer.getInstance().switchSettingsArray;
-                isSettingsSwitchArrayTransferred(settingsSwitchArray);
                 setNewWeatherData(weekWeatherData, hourlyWeatherData);
                 Log.d(myLog, "WEatherMainFragment - updateWeatherInfo - FIRSTENTER; responseCode == 200; CITIES LIST = " + citiesList.toString());
             }
         }
         if(!CurrentDataContainer.isFirstEnter) {
-            currentCity = CurrentDataContainer.getInstance().currCityName;
-            settingsSwitchArray = CurrentDataContainer.getInstance().switchSettingsArray;
+            currentCity = requireActivity()
+                    .getSharedPreferences(MainActivity.SETTINGS, MODE_PRIVATE)
+                    .getString("current city", "Sochi");
             weekWeatherData = CurrentDataContainer.getInstance().weekWeatherData;
             hourlyWeatherData = CurrentDataContainer.getInstance().hourlyWeatherList;
-            citiesList = CurrentDataContainer.getInstance().citiesList;
-
-            isSettingsSwitchArrayTransferred(settingsSwitchArray);
             setNewWeatherData(weekWeatherData, hourlyWeatherData);
         }
     }
 
-    private void isSettingsSwitchArrayTransferred(boolean[] settingsSwitchArray){
-        Log.d(myLog, "NightIsAlreadySettedInMain " + CurrentDataContainer.NightIsAlreadySettedInMain );
-        Log.d(myLog, "NightMode " + CurrentDataContainer.isNightModeOn);
-        if(settingsSwitchArray != null) {
-            if (settingsSwitchArray[0] && !CurrentDataContainer.NightIsAlreadySettedInMain) {
-                CurrentDataContainer.NightIsAlreadySettedInMain = true;
-                CurrentDataContainer.isNightModeOn = true;
-                requireActivity().recreate();
-                Log.d(myLog, " RECREATE weather main fragment");
-            }
-            if (!settingsSwitchArray[0]) CurrentDataContainer.isNightModeOn = false;
-            if (settingsSwitchArray[1]) feelsLikeTextView.setVisibility(View.VISIBLE);
-            if (settingsSwitchArray[2]) pressureInfoTextView.setVisibility(View.VISIBLE);
-        }
-    }
 
     private void setNewWeatherData(ArrayList<WeatherData> weekWeatherData, ArrayList<HourlyWeatherData> hourlyWeatherData) {
         if (weekWeatherData != null && weekWeatherData.size() != 0 && hourlyWeatherData != null && hourlyWeatherData.size() != 0) {
             WeatherData wd = weekWeatherData.get(0);
             degrees.setText(wd.getDegrees());
             Log.d("swipe", "new degrees = " + degrees.getText().toString());
-
-            ThermometerView.level = findDegreesLevel(wd.getIntDegrees());
-            windInfoTextView.setText(wd.getWindInfo());
-
+            setThermometerViewParameters(wd.getIntDegrees());
             Date currentDate = new Date();
             DateFormat timeFormat = new SimpleDateFormat("E, dd MMM", Locale.getDefault());
             String dateText = timeFormat.format(currentDate);
             currTime.setText(dateText);
-
             DateFormat updateTimeFormat = new SimpleDateFormat("HH:mm", Locale.getDefault());
             String timeText = updateTimeFormat.format(currentDate);
             String upateTimeFromRes = getResources().getString(R.string.update);
             updateTimeTextView.setText(String.format(upateTimeFromRes, timeText));
-
             weatherStatusTextView.setText(wd.getWeatherStateInfo());
-            pressureInfoTextView.setText(wd.getPressure());
-            feelsLikeTextView.setText(wd.getFeelLike());
-
+            addNewDataToCurrentWeatherRV(wd);
             setWeatherStatusImage(wd.getWeatherIcon());
-
             tempMax = new ArrayList<>();
             tempMin = new ArrayList<>();
             weatherStateInfo = new ArrayList<>();
 
             for (int i = 0; i < OpenWeatherMap.FORECAST_DAYS; i++) {
                 WeatherData weatherData = weekWeatherData.get(i);
-                Log.d("tempM", "weatherData - "+ i+ weatherData.toString());
                 daysTemp.set(i, weatherData.getDegrees());
                 tempMax.add(weatherData.getTempMax());
                 tempMin.add(weatherData.getTempMin());
@@ -334,6 +304,9 @@ public class WeatherMainFragment extends Fragment implements RVOnItemClick {
                 String imageName =weatherData.getWeatherIcon();
                 Integer resID = getResources().getIdentifier(imageName , "drawable", requireActivity().getPackageName());
                 weatherIcon.set(i, resID);
+                cardViewColor.set(i, ContextCompat.getColor(requireContext(), weatherData.getCardViewColor()));
+                Log.d("cardColor", "weatherData - "+ i+ weatherData.toString());
+
             }
             for (int i = 0; i < 8 ; i++) {
                 HourlyWeatherData hourlyData = hourlyWeatherData.get(i);
@@ -346,55 +319,109 @@ public class WeatherMainFragment extends Fragment implements RVOnItemClick {
         }
     }
 
-    private void setWeatherStatusImage(String weatherIconId){
-        if (weatherIconId.equals("thunderstorm")){
-            Uri uri = Uri.parse("http://192.168.1.35/users-images/thumbs/user_id/ffffffffffff1f1f.png");
-            weatherStatusImage.setImageURI(uri);
-        }
-        else if (weatherIconId.equals("shower_rain")) {
-            weatherStatusImage.setImageResource(R.drawable.rain_weather_status_3);
-        }
-        else if (weatherIconId.equals("rain_day")) {
-            weatherStatusImage.setImageResource(R.drawable.rain_weather_status_3);
-        }
-        else if (weatherIconId.equals("snow")) {
-            weatherStatusImage.setImageResource(R.drawable.snow_weather_status_2);
+    private void addNewDataToCurrentWeatherRV(WeatherData wd){
+        currentWeather = new ArrayList<>();
+        currentWeather.add(wd.getWindInfo());
+        SharedPreferences sharedPreferences = requireActivity().getSharedPreferences(MainActivity.SETTINGS, Context.MODE_PRIVATE);
+        if (sharedPreferences.getBoolean("feels like" , false)) currentWeather.add(wd.getFeelLike());
+        if (sharedPreferences.getBoolean("pressure" , false))  currentWeather.add(wd.getPressure());
+    }
 
-        }
-        else if (weatherIconId.equals("mist")) {
-            weatherStatusImage.setColorFilter(Color.WHITE);
-            weatherStatusImage.setImageResource(R.drawable.mist_weather_status);
-        }
-        else if (weatherIconId.equals("clear_sky_day")) {
-            Uri uri = Uri.parse("https://www.nicepng.com/png/full/389-3899694_beach-illustration-sunshine-rays-white-cinematic-bars-png.png");
-            weatherStatusImage.setImageURI(uri);
-        }
-        else if (weatherIconId.equals("few_clouds_day")) {
-            weatherStatusImage.setImageResource(R.drawable.little_cloudy_weater_status);
-        }
-        else if (weatherIconId.equals("scattered_clouds")) {
-            Uri uri = Uri.parse("https://cdn.clipart.email/ebf7869a3ef385ffb67b8a2a0dcba02a_cartoon-clouds-png-transparent-without-background-image-free-png-_1000-824.png");
-            weatherStatusImage.setImageURI(uri);
-        }
-        else if (weatherIconId.equals("broken_clouds")) {
-            Uri uri = Uri.parse("https://cdn.clipart.email/ebf7869a3ef385ffb67b8a2a0dcba02a_cartoon-clouds-png-transparent-without-background-image-free-png-_1000-824.png");
-            weatherStatusImage.setImageURI(uri);
+    private void setWeatherStatusImage(String weatherIconId){
+        switch (weatherIconId) {
+            case "thunderstorm": {
+                Uri uri = Uri.parse("http://192.168.1.35/users-images/thumbs/user_id/ffffffffffff1f1f.png");
+                weatherStatusImage.setImageURI(uri);
+                weatherStatusImage.setColorFilter(ContextCompat.getColor(requireContext(), R.color.weather_status_thunderstorm), PorterDuff.Mode.SRC_IN);
+                break;
+            }
+            case "shower_rain":
+                weatherStatusImage.setImageResource(R.drawable.rain_weather_status_3);
+                weatherStatusImage.setColorFilter(ContextCompat.getColor(requireContext(), R.color.weather_status_shower_rain), PorterDuff.Mode.SRC_IN);
+                break;
+            case "rain_day":
+                weatherStatusImage.setImageResource(R.drawable.rain_weather_status_3);
+                weatherStatusImage.setColorFilter(ContextCompat.getColor(requireContext(), R.color.weather_status_rain_day), PorterDuff.Mode.SRC_IN);
+                break;
+            case "snow":
+                weatherStatusImage.setImageResource(R.drawable.snow_weather_status_2);
+                weatherStatusImage.setColorFilter(ContextCompat.getColor(requireContext(), R.color.weather_status_snow), PorterDuff.Mode.SRC_IN);
+                break;
+            case "mist":
+                weatherStatusImage.setImageResource(R.drawable.mist_weather_status);
+                weatherStatusImage.setColorFilter(ContextCompat.getColor(requireContext(), R.color.weather_status_mist), PorterDuff.Mode.SRC_IN);
+                break;
+            case "clear_sky_day": {
+                weatherStatusImage.setImageResource(R.drawable.sunny_weather_status_4);
+                weatherStatusImage.setColorFilter(ContextCompat.getColor(requireContext(), R.color.weather_status_clear_sky_day), PorterDuff.Mode.SRC_IN);
+                break;
+            }
+            case "few_clouds_day":
+                weatherStatusImage.setImageResource(R.drawable.little_cloudy_weather_status_2);
+                weatherStatusImage.setColorFilter(ContextCompat.getColor(requireContext(), R.color.weather_status_few_clouds_day), PorterDuff.Mode.SRC_IN);
+                break;
+            case "scattered_clouds":
+                weatherStatusImage.setImageResource(R.drawable.cloudy_weather_status);
+                weatherStatusImage.setColorFilter(ContextCompat.getColor(requireContext(), R.color.weather_status_scattered_clouds), PorterDuff.Mode.SRC_IN);
+                break;
+            case "broken_clouds": {
+                weatherStatusImage.setImageResource(R.drawable.cloudy_weather_status);
+                weatherStatusImage.setColorFilter(ContextCompat.getColor(requireContext(), R.color.weather_status_broken_clouds), PorterDuff.Mode.SRC_IN);
+                break;
+            }
         }
     }
 
-    private int findDegreesLevel(int degrees){
-        if(degrees <= -30) return 0;
-        if(degrees <= -20) return 15;
-        if(degrees <= -10) return 20;
-        if(degrees <= 0) return 25;
-        if(degrees <= 10) return 30;
-        if(degrees <= 15) return 38;
-        if(degrees <= 20) return 48;
-        if(degrees <= 25) return 58;
-        if(degrees <= 30) return 68;
-        if(degrees <= 40) return 78;
-        if(degrees <= 50) return 95;
-        return 100;
+    private void setThermometerViewParameters(int degrees){
+        if(degrees <= -30) {
+            ThermometerView.level = 15;
+            ThermometerView.levelColor = ContextCompat.getColor(requireContext(), R.color.thermometer_1);
+        }
+        else if(degrees <= -20) {
+            ThermometerView.level = 20;
+            ThermometerView.levelColor = ContextCompat.getColor(requireContext(), R.color.thermometer_2);
+        }
+        else if(degrees <= -10){
+            ThermometerView.level = 25;
+            ThermometerView.levelColor = ContextCompat.getColor(requireContext(), R.color.thermometer_3);
+        }
+        else if(degrees <= 0){
+            ThermometerView.level = 30;
+            ThermometerView.levelColor = ContextCompat.getColor(requireContext(), R.color.thermometer_4);
+        }
+        else if(degrees <= 10) {
+            ThermometerView.level = 35;
+            ThermometerView.levelColor = ContextCompat.getColor(requireContext(), R.color.thermometer_5);
+        }
+        else if(degrees <= 15){
+            ThermometerView.level = 45;
+            ThermometerView.levelColor = ContextCompat.getColor(requireContext(), R.color.thermometer_6);
+        }
+        else if(degrees <= 20){
+            ThermometerView.level = 55;
+            ThermometerView.levelColor = ContextCompat.getColor(requireContext(), R.color.thermometer_7);
+        }
+        else if(degrees <= 25) {
+            ThermometerView.level = 65;
+            ThermometerView.levelColor = ContextCompat.getColor(requireContext(), R.color.thermometer_8);
+        }
+        else if(degrees <= 30) {
+            ThermometerView.level = 75;
+            ThermometerView.levelColor = ContextCompat.getColor(requireContext(), R.color.thermometer_9);
+        }
+        else  if(degrees <= 40) {
+            ThermometerView.level = 85;
+            ThermometerView.levelColor = ContextCompat.getColor(requireContext(), R.color.thermometer_10);
+        }
+        else if(degrees <= 50) {
+            ThermometerView.level = 95;
+            ThermometerView.levelColor = ContextCompat.getColor(requireContext(), R.color.thermometer_11);
+        }
+        else {
+            ThermometerView.level = 100;
+            ThermometerView.levelColor = ContextCompat.getColor(requireContext(), R.color.thermometer_12);        }
+        Log.d("BatteryView", "setThermometerViewParameters");
+        thermometerView.invalidate();
     }
 
     private void showAlertDialog(){
@@ -441,7 +468,7 @@ public class WeatherMainFragment extends Fragment implements RVOnItemClick {
 
     private void addDefaultDataToWeatherStateInfo(){
         for (int i = 0; i < OpenWeatherMap.FORECAST_DAYS ; i++) {
-            weatherStateInfo.add("not found");
+           weatherStateInfo.add("not found");
         }
     }
 
@@ -457,6 +484,12 @@ public class WeatherMainFragment extends Fragment implements RVOnItemClick {
         weatherIcon.add(R.drawable.mist);
     }
 
+    private void addDefaultDataToCardViewColorList(){
+        for (int i = 0; i < 5 ; i++) {
+            cardViewColor.add(ContextCompat.getColor(requireContext(),R.color.white));
+        }
+    }
+
     public void addDefaultDataToHourlyWeatherRV(android.content.res.Resources resources){
         String[] hourlyTempStringArr = resources.getStringArray(R.array.daysTemp);
         hourlyTemperature  = Arrays.asList(hourlyTempStringArr);
@@ -467,11 +500,24 @@ public class WeatherMainFragment extends Fragment implements RVOnItemClick {
         addDataToWeatherIconsIdFromRes(hourlyWeatherIcon);
     }
 
-    @Override
-    public void onItemClicked(View view, String itemText) {}
+    private void addDefaultDataToCurrentWeatherRV(Resources resources){
+        currentWeather = new ArrayList<>();
+        String windInfoFromRes = resources.getString(R.string.windInfo);
+        String wind = String.format(windInfoFromRes, "0");
+        String feelsFromRes = resources.getString(R.string.feels_like_temp);
+        String feels = String.format(feelsFromRes, "+","0");
+        String pressureFromRes = resources.getString(R.string.pressureInfo);
+        String pressure = String.format(pressureFromRes, "0");
+        currentWeather.add(wind);
+        currentWeather.add(feels);
+        currentWeather.add(pressure);
+    }
 
     @Override
-    public void onItemLongPressed(View itemText) {}
+    public void onItemClicked(View view, String itemText, int position) {}
+
+    @Override
+    public void onItemLongPressed(View itemText, int position) {}
 
     private void setupRecyclerView() {
         daysTemp = new ArrayList<>();
@@ -481,14 +527,7 @@ public class WeatherMainFragment extends Fragment implements RVOnItemClick {
 
         Log.d("tempMax-min in RV", daysTemp.toString());
         LinearLayoutManager layoutManager = new LinearLayoutManager(requireActivity().getBaseContext(), LinearLayoutManager.VERTICAL, false);
-        WeekWeatherRecyclerDataAdapter weekWeatherAdapter = new WeekWeatherRecyclerDataAdapter(days, daysTemp, weatherIcon, weatherStateInfo, this);
-
-        if (!isRefreshed) {
-            DividerItemDecoration itemDecoration = new DividerItemDecoration(requireActivity().getBaseContext(), LinearLayoutManager.VERTICAL);
-            itemDecoration.setDrawable(Objects.requireNonNull(ContextCompat.getDrawable(requireActivity().getBaseContext(), R.drawable.decorator_item)));
-            weatherRecyclerView.addItemDecoration(itemDecoration);
-        }
-
+        WeekWeatherRecyclerDataAdapter weekWeatherAdapter = new WeekWeatherRecyclerDataAdapter(days, daysTemp, weatherIcon, weatherStateInfo, cardViewColor, this);
         weatherRecyclerView.setLayoutManager(layoutManager);
         weatherRecyclerView.setAdapter(weekWeatherAdapter);
     }
@@ -499,5 +538,13 @@ public class WeatherMainFragment extends Fragment implements RVOnItemClick {
 
         hourlyRecyclerView.setLayoutManager(layoutManager);
         hourlyRecyclerView.setAdapter(hourlyWeatherRecyclerDataAdapter);
+    }
+
+    private void setupCurrentWeatherRecyclerView(){
+        LinearLayoutManager layoutManager = new LinearLayoutManager(requireActivity().getBaseContext(), LinearLayoutManager.HORIZONTAL, false);
+        CurrentWeatherRecyclerDataAdapter currentWeatherRecyclerDataAdapter = new CurrentWeatherRecyclerDataAdapter(currentWeather, this);
+
+        currentWeatherRecyclerView.setLayoutManager(layoutManager);
+        currentWeatherRecyclerView.setAdapter(currentWeatherRecyclerDataAdapter);
     }
 }

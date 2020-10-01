@@ -25,7 +25,7 @@
     <string name="pleaseChooseCityFirst">Please, choose city first</string>
     <string name="about">About</string>
     <string name="appName">Just Weather</string>
-    <string name="version">Version 1.1 </string>
+    <string name="version">Version 1.2 </string>
 
     <string-array name="cities">
         <item>Moscow</item>
@@ -103,4 +103,6 @@
     <string name="connection_failed">Connection failed, please check your connection.</string>
     <string name="sorry_alert_dialog">Sorry, I can\'t find weather forecast.</string>
     <string name="update">update: %1$s</string>
+    <string name="alfabetical_sorting">alphabetical sorting</string>
+    <string name="sorting_by_date">sorting by date</string>
 </resources>

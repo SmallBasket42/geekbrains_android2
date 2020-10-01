@@ -2,11 +2,13 @@ package ru.geekbrains.justweather.forecastRequest;
 
 import android.content.res.Resources;
 import android.util.Log;
+
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Locale;
-import ru.geekbrains.justweather.model.weather.HourlyWeatherData;
-import ru.geekbrains.justweather.model.weather.WeatherData;
+
+import ru.geekbrains.justweather.model.HourlyWeatherData;
+import ru.geekbrains.justweather.model.WeatherData;
 import ru.geekbrains.justweather.model.weather.WeatherRequest;
 
 public final class OpenWeatherMap {
@@ -23,13 +25,9 @@ public final class OpenWeatherMap {
     ArrayList<String> feelLikeArrayList;
 
     private static OpenWeatherMap instance = null;
-
     private static final Object syncObj = new Object();
-
     private OpenWeatherMap(){}
-
     public static OpenWeatherMap getInstance(){
-
         synchronized (syncObj) {
             if (instance == null) {
                 instance = new OpenWeatherMap();
@@ -86,7 +84,6 @@ public final class OpenWeatherMap {
     }
 
     private void addCurrTimeDataToDataLists(){
-
         fiveDaysTempMax.add("0");
         fourDayTempMin.add("0");
         weatherStateInfoArrayList.add(String.format(Locale.getDefault(), "%s", weatherRequest.getList().get(0).getWeather().get(0).getDescription()));
@@ -153,4 +150,6 @@ public final class OpenWeatherMap {
         return null;
     }
 }
+
+
 

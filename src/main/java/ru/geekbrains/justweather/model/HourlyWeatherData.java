@@ -1,7 +1,9 @@
-package ru.geekbrains.justweather.model.weather;
+package ru.geekbrains.justweather.model;
 
 import android.util.Log;
+
 import androidx.annotation.NonNull;
+
 import java.io.Serializable;
 
 public class HourlyWeatherData implements Serializable {
