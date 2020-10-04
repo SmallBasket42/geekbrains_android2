@@ -55,7 +55,7 @@ public class WeekWeatherRecyclerDataAdapter extends RecyclerView.Adapter<WeekWea
     @Override
     public int getItemCount() {
         return days == null ? 0 : days.size();
-    }//
+    }
 
     class ViewHolder extends RecyclerView.ViewHolder {
         private TextView dayTextView;

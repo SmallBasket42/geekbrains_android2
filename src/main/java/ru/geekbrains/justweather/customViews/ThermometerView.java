@@ -29,10 +29,10 @@ public class ThermometerView extends View {
     private Paint levelPaint;
     private int width = 0;
     private int height = 0;
+
     public static int level = 100;
     private boolean pressed = false;
     private OnClickListener listener;
-
     private static int padding = 10;
     private final static int round = 25;
     private final static int headRound = 30;
@@ -66,7 +66,6 @@ public class ThermometerView extends View {
                 0);
 
         thermometerColor = typedArray.getColor(R.styleable.ThermometerView_thermometer_color, Color.GRAY);
-
         levelColor = typedArray.getColor(R.styleable.ThermometerView_level_color, Color.GREEN);
         levelPressedColor = typedArray.getColor(R.styleable.ThermometerView_level_pressed_color, Color.WHITE);
         level = typedArray.getInteger(R.styleable.ThermometerView_level, 100);
@@ -91,6 +90,7 @@ public class ThermometerView extends View {
     protected void onSizeChanged(int w, int h, int oldw, int oldh) {
         super.onSizeChanged(w, h, oldw, oldh);
         Log.d(TAG, "onSizeChanged");
+
         width = w - getPaddingLeft() - getPaddingRight();
         height = h - getPaddingTop() - getPaddingBottom();
         thermometerRectangle.set(padding,padding,width-padding,height-padding);
@@ -125,12 +125,16 @@ public class ThermometerView extends View {
     @Override
     public boolean onTouchEvent(MotionEvent event) {
         Log.d(TAG, "onTouchEvent");
+
         int action = event.getAction();
+
         pressed = action == MotionEvent.ACTION_DOWN;
         if(pressed && listener != null){
             listener.onClick(this);
         }
+
         invalidate();
+
         return true;
     }
 
@@ -180,5 +184,3 @@ public class ThermometerView extends View {
         super.requestLayout();
     }
 }
-
-

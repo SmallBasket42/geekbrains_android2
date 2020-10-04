@@ -1,11 +1,11 @@
 package ru.geekbrains.justweather.database;
 
-
 import java.util.List;
 
 public class CitiesListSource {
 
     private final CitiesListDao citiesListDao;
+
     private List<CitiesList> citiesList;
 
     public CitiesListSource(CitiesListDao citiesListDao){
@@ -55,4 +55,3 @@ public class CitiesListSource {
         citiesList = citiesListDao.sortByName();
     }
 }
-
