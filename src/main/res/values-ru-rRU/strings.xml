@@ -7,7 +7,7 @@
     <string name="city">Город</string>
     <string name="choose_your_city">Пожалуйста, введите название города.</string>
     <string name="enter_the_name_of_the_city">Ваш город</string>
-    <string name="ok">Ok</string>
+    <string name="ok">OK</string>
     <string name="settings">Настройки</string>
     <string name="set_on_night_mode">Включить ночной режим</string>
     <string name="show_atmosphere_pressure">Показывать атмосферное давление</string>
@@ -24,7 +24,7 @@
     <string name="pleaseChooseCotyFirst">Пожалуйста, сначала выберите город</string>
     <string name="about">О приложении</string>
     <string name="appName">Just Weather</string>
-    <string name="version">"Версия 1.2 "</string>
+    <string name="version">"Версия 1.5 "</string>
     <string name="delete_city">Удалить город?</string>
     <string name="delete">Удалить</string>
 
@@ -93,7 +93,7 @@
     <string name="nav_header_title">Android Studio</string>
     <string name="nav_header_subtitle">android.studio@android.com</string>
     <string name="nav_header_desc">Navigation header</string>
-    <string name="action_settings">Settings</string>
+    <string name="action_settings">Настройки</string>
     <string name="city_not_found">Город не найден, попробуйте еще раз.</string>
     <string name="menu_home">Домой</string>
     <string name="menu_choose_city">Выберите город</string>
@@ -110,4 +110,17 @@
     <string name="broadcastReceiver_check_internet">Пожалуйста, проверьте интернет соединение</string>
     <string name="broadcastReceiver_wifi_conn_failed">Wi-fi соединение отсутствует</string>
     <string name="broadcastReceiver_check_wifi">Пожалуйста, проверьте wi-fi соединение</string>
+    <string name="not_found">Не найдено</string>
+    <string name="provided_by_open_weather_map">Прогноз: Open Weather Map</string>
+    <string name="alert_message">Погода в %1$s не найдена. Пожалуйтса, попробуйте еще раз или воспользуйтесь поиском по имени.</string>
+    <string name="places_api_key">AIzaSyCsdcjzPbl1ShsdyDF3ssaAEomQAOkC7L0</string>
+    <string name="m_s">\ м/с</string>
+    <string name="N">\u0020С</string>
+    <string name="S">\u0020Ю</string>
+    <string name="I">\u0020З</string>
+    <string name="W">\u0020В</string>
+    <string name="NI">\u0020СЗ</string>
+    <string name="NW">\u0020СВ</string>
+    <string name="SI">\u0020ЮЗ</string>
+    <string name="SW">\u0020ЮВ</string>
 </resources>

@@ -5,21 +5,30 @@ import androidx.room.Entity;
 import androidx.room.Index;
 import androidx.room.PrimaryKey;
 
-    @Entity(indices = {@Index(value = {"city"})})
-    public class CitiesList {
+@Entity(indices = {@Index(value = {"city"})})
+public class CitiesList {
 
-        @PrimaryKey(autoGenerate = true)
-        public long id;
+    @PrimaryKey(autoGenerate = true)
+    public long id;
 
-        @ColumnInfo(name = "city")
-        public String name;
+    @ColumnInfo(name = "city")
+    public String name;
 
-        @ColumnInfo(name = "created")
-        public long created;
+    @ColumnInfo(name = "created")
+    public long created;
 
-        public CitiesList(){}
+    @ColumnInfo(name = "latitude")
+    public Double latitude;
 
-        public CitiesList(String cityName){this.name = cityName; this.created = System.currentTimeMillis()/1000L;}
+    @ColumnInfo(name = "longitude")
+    public Double longitude;
+
+    public CitiesList(){}
+
+    public CitiesList(String cityName, Double latitude, Double longitude){
+        this.name = cityName;
+        this.created = System.currentTimeMillis()/1000L;
+        this.latitude = latitude;
+        this.longitude = longitude;
     }
-
-
+}

@@ -41,4 +41,10 @@ public interface CitiesListDao {
     @Query("SELECT * FROM citieslist ORDER BY city ASC")
     List<CitiesList> sortByName();
 
+    @Query("SELECT latitude FROM citieslist WHERE city = :name")
+    double getLatitudeByName(String name);
+
+    @Query("SELECT longitude FROM citieslist WHERE city = :name")
+    double getLongitudeByName(String name);
+
 }

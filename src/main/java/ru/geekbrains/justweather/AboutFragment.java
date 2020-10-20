@@ -5,6 +5,8 @@ import android.net.Uri;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.LayoutInflater;
+import android.view.Menu;
+import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageButton;
@@ -27,6 +29,14 @@ public class AboutFragment extends Fragment {
     public void onCreate(@Nullable Bundle savedInstanceState) {
         Log.d("myLog", "onCreate - fragment AboutFragment");
         super.onCreate(savedInstanceState);
+        setHasOptionsMenu(true);
+    }
+
+    @Override
+    public void onPrepareOptionsMenu(Menu menu) {
+        MenuItem item=menu.findItem(R.id.action_curr_location);
+        if(item!=null)
+            item.setVisible(false);
     }
 
     @Override
@@ -43,7 +53,7 @@ public class AboutFragment extends Fragment {
         sendMail.setOnClickListener(view1 -> {
             Intent emailIntent = new Intent(Intent.ACTION_SENDTO, Uri.fromParts(
                     "mailto","alexander.mukha23@gmail.com", null));
-            emailIntent.putExtra(Intent.EXTRA_SUBJECT, "Just Weather");
+            emailIntent.putExtra(Intent.EXTRA_SUBJECT, "JustWeather");
             startActivity(Intent.createChooser(emailIntent, "Send email"));
         });
         super.onViewCreated(view, savedInstanceState);

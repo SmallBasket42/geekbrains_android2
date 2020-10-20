@@ -1,10 +1,12 @@
 package ru.geekbrains.justweather;
 
+import android.Manifest;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.content.pm.PackageManager;
 import android.net.ConnectivityManager;
 import android.net.Uri;
 import android.net.wifi.WifiManager;
@@ -18,6 +20,7 @@ import com.google.android.material.navigation.NavigationView;
 import com.squareup.otto.Subscribe;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.ActionBarDrawerToggle;
+import androidx.core.app.ActivityCompat;
 import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentTransaction;
 import androidx.drawerlayout.widget.DrawerLayout;
@@ -25,8 +28,11 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
 import ru.geekbrains.justweather.broadcastReceiver.InternetConnectionReceiver;
 import ru.geekbrains.justweather.broadcastReceiver.WifiConnectionReceiver;
+import ru.geekbrains.justweather.events.OpenChooseCityFragmentEvent;
 import ru.geekbrains.justweather.events.OpenSettingsFragmentEvent;
 import ru.geekbrains.justweather.events.OpenWeatherMainFragmentEvent;
+import ru.geekbrains.justweather.events.ShowCurrLocationItemEvent;
+import ru.geekbrains.justweather.events.ShowCurrentLocationWeatherEvent;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -35,7 +41,7 @@ public class MainActivity extends AppCompatActivity {
     public static final String SETTINGS = "settings";
     WifiConnectionReceiver wifiConnectionReceiver = new WifiConnectionReceiver();
     InternetConnectionReceiver internetConnectionReceiver = new InternetConnectionReceiver();
-
+    private MenuItem currCityLocation;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -46,12 +52,17 @@ public class MainActivity extends AppCompatActivity {
 
         drawer = findViewById(R.id.drawer_layout);
         navigationView = findViewById(R.id.nav_view);
+
+        navigationView.removeHeaderView(navigationView.getHeaderView(0));
+
         ActionBarDrawerToggle toggle = new ActionBarDrawerToggle(
                 this, drawer, toolbar, R.string.navigation_drawer_open, R.string.navigation_drawer_close);
         drawer.addDrawerListener(toggle);
         toggle.syncState();
 
         setHomeFragment();
+
+
         setOnClickForSideMenuItems();
         Fresco.initialize(this);
         IntentFilter intentFilter = new IntentFilter(ConnectivityManager.CONNECTIVITY_ACTION);
@@ -86,6 +97,10 @@ public class MainActivity extends AppCompatActivity {
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         getMenuInflater().inflate(R.menu.menu, menu);
+        currCityLocation = menu.findItem(R.id.action_curr_location);
+        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION)
+                == PackageManager.PERMISSION_GRANTED) {
+            currCityLocation.setVisible(true);}
         return true;
     }
 
@@ -130,6 +145,19 @@ public class MainActivity extends AppCompatActivity {
     @SuppressWarnings("unused")
     public void onOpenSettingsFragmentEvent(OpenSettingsFragmentEvent event) {
         setSettingsFragment();
+    }
+
+    @Subscribe
+    @SuppressWarnings("unused")
+    public void onShowCurrLocationItemEvent(ShowCurrLocationItemEvent event) {
+        currCityLocation.setVisible(true);
+    }
+
+    @Subscribe
+    @SuppressWarnings("unused")
+    public void onOpenChooseCityFragmentEvent(OpenChooseCityFragmentEvent event) {
+        setChooseCityFragment();
+        navigationView.setCheckedItem(R.id.nav_choose_city);
     }
 
     private void setOnClickForSideMenuItems() {
@@ -180,11 +208,10 @@ public class MainActivity extends AppCompatActivity {
         fragmentTransaction.commit();
     }
 
-
     @Override
     public boolean onOptionsItemSelected(@NonNull MenuItem item) {
         String currCityName = getSharedPreferences(MainActivity.SETTINGS, MODE_PRIVATE)
-                .getString("current city", "Saint Petersburg");
+                .getString("current city", "Sochi");
 
         if (item.getItemId() == R.id.action_settings) {
             setSettingsFragment();
@@ -194,6 +221,9 @@ public class MainActivity extends AppCompatActivity {
             Uri uri = Uri.parse(wiki);
             Intent intent = new Intent(Intent.ACTION_VIEW, uri);
             startActivity(intent);
+        }
+        if(item.getItemId() == R.id.action_curr_location){
+            EventBus.getBus().post(new ShowCurrentLocationWeatherEvent());
         }
         return false;
     }

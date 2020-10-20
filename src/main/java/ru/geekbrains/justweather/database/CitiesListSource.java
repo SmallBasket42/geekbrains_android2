@@ -1,5 +1,6 @@
 package ru.geekbrains.justweather.database;
 
+import java.util.ArrayList;
 import java.util.List;
 
 public class CitiesListSource {
@@ -33,7 +34,6 @@ public class CitiesListSource {
         if (cityFromDB != null){
             updateCityCreatedTime(cityFromDB.name);
         } else citiesListDao.insertCity(city);
-
     }
 
     public void updateCity(CitiesList city){
@@ -53,5 +53,15 @@ public class CitiesListSource {
 
     public void loadCitiesListSortedByName(){
         citiesList = citiesListDao.sortByName();
+    }
+
+    public List<Double> getCoordinatesFromDB(String name){
+        Double latitude = citiesListDao.getLatitudeByName(name);
+        Double longitude = citiesListDao.getLongitudeByName(name);
+        List<Double> coordinates = new ArrayList<>();
+        coordinates.add(latitude);
+        coordinates.add(longitude);
+        loadCitiesListSortedByCreated();
+        return coordinates;
     }
 }

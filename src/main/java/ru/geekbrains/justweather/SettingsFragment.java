@@ -6,6 +6,8 @@ import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.LayoutInflater;
+import android.view.Menu;
+import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Switch;
@@ -34,6 +36,14 @@ public class SettingsFragment extends Fragment {
     public void onCreate(@Nullable Bundle savedInstanceState) {
         Log.d("myLog", "onCreate - fragment SettingsFragment");
         super.onCreate(savedInstanceState);
+        setHasOptionsMenu(true);
+    }
+
+    @Override
+    public void onPrepareOptionsMenu(Menu menu) {
+        MenuItem item=menu.findItem(R.id.action_curr_location);
+        if(item!=null)
+            item.setVisible(false);
     }
 
     @Override
@@ -96,6 +106,6 @@ public class SettingsFragment extends Fragment {
     private void saveToPreference(SharedPreferences preferences, boolean isChecked, String switchName) {
         SharedPreferences.Editor editor = preferences.edit();
         editor.putBoolean(switchName, isChecked);
-        editor.apply();
+        editor.commit();
     }
 }

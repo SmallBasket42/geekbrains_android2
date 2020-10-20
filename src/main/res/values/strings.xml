@@ -25,7 +25,7 @@
     <string name="pleaseChooseCityFirst">Please, choose city first</string>
     <string name="about">About</string>
     <string name="appName">Just Weather</string>
-    <string name="version">Version 1.2 </string>
+    <string name="version">Version 1.5 </string>
 
     <string-array name="cities">
         <item>Moscow</item>
@@ -109,4 +109,17 @@
     <string name="broadcastReceiver_check_internet">Please, check your connection</string>
     <string name="broadcastReceiver_wifi_conn_failed">Wi-fi connection failed</string>
     <string name="broadcastReceiver_check_wifi">Please, check your connection</string>
+    <string name="not_found">Not found</string>
+    <string name="provided_by_open_weather_map">Forecast: Open Weather Map</string>
+    <string name="alert_message">Weather in %1$s not found. Please, try again or use search by name.</string>
+    <string name="places_api_key">AIzaSyCsdcjzPbl1ShsdyDF3ssaAEomQAOkC7L0</string>
+    <string name="m_s">\ m/s</string>
+    <string name="N">\u0020N</string>
+    <string name="S">\u0020S</string>
+    <string name="I">\u0020I</string>
+    <string name="W">\u0020W</string>
+    <string name="NI">\u0020NI</string>
+    <string name="NW">\u0020NW</string>
+    <string name="SI">\u0020SI</string>
+    <string name="SW">\u0020SW</string>
 </resources>

@@ -9,8 +9,11 @@ import ru.geekbrains.justweather.model.WeatherData;
 public class CurrentDataContainer implements Serializable {
 
     private static CurrentDataContainer instance = null;
+
     private static final Object syncObj = new Object();
+
     private CurrentDataContainer(){}
+
     public static CurrentDataContainer getInstance(){
 
         synchronized (syncObj) {
@@ -24,6 +27,10 @@ public class CurrentDataContainer implements Serializable {
     ArrayList<WeatherData> weekWeatherData;
     ArrayList<HourlyWeatherData> hourlyWeatherList;
     static boolean isFirstEnter = true;
+    static boolean isFirstCityInSession = true;
     static Stack<String> backStack = new Stack<>();
     static boolean isCitiesListSortedByName;
+    public static boolean isNetworkConnected;
+    public static Double cityLatitude;
+    public static Double cityLongitude;
 }
